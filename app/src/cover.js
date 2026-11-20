@@ -1,200 +1,143 @@
-// NEON TIDE cover renderer: draws the five-crew poster on a canvas.
-// One big center panel (the hero crew) and four smaller crew panels around
-// it, bold Anton title, Pacifico script line, five stars, and the tagline.
-// All drawing is local and offline; photos come from the user's machine or
-// the app's own sample crops under app/samples/.
+// NEON TIDE cover renderer: draws the five-crew GTA-style poster on a
+// canvas. Layout: a tall hero panel in the centre (The Getaway), the other
+// four crews in the corners (Hacker / Broker top, Enforcer / Fixer bottom),
+// title + script + five stars across the top, tagline + ISSUE 04 at the foot.
+// Photos are drawn cover-fit inside their gold frames; a missing photo gets
+// a neon gradient placeholder with the crew name.
 
 export const CREWS = [
-  { key: 'hero', label: 'THE GETAWAY', file: 'neon-hero.jpg' },
-  { key: 'hacker', label: 'THE HACKER', file: 'neon-hacker.jpg' },
-  { key: 'broker', label: 'THE BROKER', file: 'neon-broker.jpg' },
-  { key: 'enforcer', label: 'THE ENFORCER', file: 'neon-enforcer.jpg' },
-  { key: 'fixer', label: 'THE FIXER', file: 'neon-fixer.jpg' },
+  { key: 'hero', name: 'THE GETAWAY', sample: 'neon-hero.jpg' },
+  { key: 'hacker', name: 'THE HACKER', sample: 'neon-hacker.jpg' },
+  { key: 'broker', name: 'THE BROKER', sample: 'neon-broker.jpg' },
+  { key: 'enforcer', name: 'THE ENFORCER', sample: 'neon-enforcer.jpg' },
+  { key: 'fixer', name: 'THE FIXER', sample: 'neon-fixer.jpg' },
 ];
 
-const GOLD = '#ffd23e';
-const PINK = '#ff2e88';
-const CREAM = '#fff6e0';
+export const DEFAULT_STATE = {
+  title: 'NEON TIDE',
+  script: 'After Midnight',
+  tagline: 'FIVE CREWS · ONE HARBOR · NO MERCY',
+  photos: { hero: null, hacker: null, broker: null, enforcer: null, fixer: null },
+};
 
-// Draw an image cover-fitting a rectangle (center crop, no distortion).
-function drawCoverImage(ctx, img, x, y, w, h) {
-  const iw = img.naturalWidth || img.width;
-  const ih = img.naturalHeight || img.height;
-  const scale = Math.max(w / iw, h / ih);
-  const dw = iw * scale;
-  const dh = ih * scale;
+const GOLD = '#ffc93c';
+const MAGENTA = '#ff2e88';
+const CYAN = '#19e3ff';
+
+function coverFit(ctx, img, x, y, w, h) {
+  const s = Math.max(w / img.width, h / img.height);
+  const dw = img.width * s;
+  const dh = img.height * s;
   ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
-function neonText(ctx, text, x, y, font, fill, glow) {
-  ctx.save();
-  ctx.font = font;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = glow;
-  ctx.shadowBlur = 18;
-  ctx.fillStyle = fill;
-  ctx.fillText(text, x, y);
-  ctx.shadowBlur = 0;
-  ctx.fillText(text, x, y);
-  ctx.restore();
-}
-
-function panel(ctx, img, x, y, w, h, label) {
+function drawPanel(ctx, box, img, label, W) {
+  const { x, y, w, h } = box;
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
   ctx.clip();
-  if (img) drawCoverImage(ctx, img, x, y, w, h);
-  else {
+  if (img) {
+    coverFit(ctx, img, x, y, w, h);
+  } else {
     const g = ctx.createLinearGradient(x, y, x + w, y + h);
-    g.addColorStop(0, '#3d1d63');
-    g.addColorStop(1, '#12041f');
+    g.addColorStop(0, '#3b115e');
+    g.addColorStop(1, '#12082a');
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
   }
-  // Sunset wash over the photo, stronger at the bottom.
-  const wash = ctx.createLinearGradient(0, y, 0, y + h);
-  wash.addColorStop(0, 'rgba(255,46,136,0.05)');
-  wash.addColorStop(1, 'rgba(255,122,26,0.28)');
+  // Neon wash so every photo shares the same sunset grade.
+  const wash = ctx.createLinearGradient(x, y, x, y + h);
+  wash.addColorStop(0, 'rgba(255,46,136,0.12)');
+  wash.addColorStop(1, 'rgba(25,227,255,0.10)');
   ctx.fillStyle = wash;
   ctx.fillRect(x, y, w, h);
   ctx.restore();
+
   // Gold frame.
-  ctx.save();
   ctx.strokeStyle = GOLD;
-  ctx.lineWidth = Math.max(3, w * 0.012);
+  ctx.lineWidth = Math.max(2, W * 0.003);
   ctx.strokeRect(x, y, w, h);
-  ctx.restore();
-  // Callout chip.
-  const chipH = Math.max(26, h * 0.09);
-  const chipW = Math.min(w * 0.92, label.length * chipH * 0.62 + chipH * 0.9);
-  const cx = x + (w - chipW) / 2;
-  const cy = y + h - chipH - Math.max(8, h * 0.03);
-  ctx.save();
-  ctx.fillStyle = 'rgba(11,6,24,0.88)';
-  ctx.fillRect(cx, cy, chipW, chipH);
-  ctx.strokeStyle = GOLD;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(cx, cy, chipW, chipH);
-  ctx.font = `${Math.round(chipH * 0.52)}px "Bebas Neue", sans-serif`;
+
+  // Callout chip with the crew name.
+  const chipH = Math.max(22, h * 0.13);
+  ctx.fillStyle = GOLD;
+  ctx.fillRect(x, y + h - chipH, w, chipH);
+  ctx.fillStyle = '#160b2e';
+  ctx.font = `${Math.round(chipH * 0.62)}px 'Bebas Neue', sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = GOLD;
-  ctx.fillText(label, cx + chipW / 2, cy + chipH / 2 + 1);
-  ctx.restore();
+  ctx.fillText(label, x + w / 2, y + h - chipH / 2 + 1);
 }
 
-function drawStars(ctx, cx, y, size) {
-  ctx.save();
-  ctx.fillStyle = GOLD;
-  ctx.shadowColor = PINK;
-  ctx.shadowBlur = 12;
-  ctx.font = `${size}px sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('\u2605\u2605\u2605\u2605\u2605', cx, y);
-  ctx.restore();
+export async function ensureFonts() {
+  try {
+    await Promise.all([
+      document.fonts.load('700 40px Anton'),
+      document.fonts.load('400 40px Pacifico'),
+      document.fonts.load('400 40px "Bebas Neue"'),
+    ]);
+  } catch (_) {
+    // Fall back to system fonts; the poster still draws.
+  }
 }
 
-// Draw the poster. `images` maps crew key -> HTMLImageElement (or null).
-// `heroCrew` is the crew shown in the big center panel.
-export function drawCover(canvas, images, opts) {
-  const { title, script, tagline, heroCrew } = opts;
+export function drawCover(canvas, state) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width;
   const H = canvas.height;
-  const u = W / 1080; // layout unit, 1 at square width
+  const u = W / 1080; // scale unit so the same layout works at any size
 
-  // Vice City sunset: deep violet sky to hot magenta to amber horizon.
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, '#1a0b2e');
-  sky.addColorStop(0.42, '#4a1155');
-  sky.addColorStop(0.68, '#a01e63');
-  sky.addColorStop(0.86, '#ff5e3a');
-  sky.addColorStop(1, '#ffb347');
-  ctx.fillStyle = sky;
+  // Sunset background.
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#2a0a4d');
+  bg.addColorStop(0.45, '#12082a');
+  bg.addColorStop(1, '#0b0618');
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
-  // Sun glow behind the title.
-  const sun = ctx.createRadialGradient(W / 2, H * 0.16, 10, W / 2, H * 0.16, W * 0.42);
-  sun.addColorStop(0, 'rgba(255,210,62,0.55)');
-  sun.addColorStop(1, 'rgba(255,210,62,0)');
-  ctx.fillStyle = sun;
-  ctx.fillRect(0, 0, W, H * 0.5);
 
-  // Title + script.
-  neonText(ctx, title, W / 2, H * 0.085, `${Math.round(118 * u)}px Anton, sans-serif`, CREAM, PINK);
-  ctx.save();
-  ctx.font = `${Math.round(44 * u)}px Pacifico, cursive`;
+  // Header: title, script, stars.
+  const headerH = H * 0.15;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ff7ab8';
-  ctx.shadowColor = '#ff2e88';
-  ctx.shadowBlur = 10;
-  ctx.fillText(script, W / 2, H * 0.155);
-  ctx.restore();
-
-  // ISSUE 04 badge, top right.
-  const badgeR = Math.round(52 * u);
-  const bx = W - badgeR - Math.round(26 * u);
-  const by = Math.round(26 * u) + badgeR;
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(bx, by, badgeR, 0, Math.PI * 2);
+  ctx.fillStyle = MAGENTA;
+  ctx.font = `${Math.round(64 * u)}px Anton, sans-serif`;
+  ctx.shadowColor = 'rgba(255,46,136,0.8)';
+  ctx.shadowBlur = 18 * u;
+  ctx.fillText(state.title.toUpperCase(), W / 2, headerH * 0.52);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = CYAN;
+  ctx.font = `${Math.round(30 * u)}px Pacifico, cursive`;
+  ctx.fillText(state.script, W / 2, headerH * 0.88);
   ctx.fillStyle = GOLD;
-  ctx.fill();
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = '#0b0618';
-  ctx.stroke();
-  ctx.fillStyle = '#0b0618';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `${Math.round(26 * u)}px Anton, sans-serif`;
-  ctx.fillText('ISSUE', bx, by - Math.round(16 * u));
-  ctx.font = `${Math.round(34 * u)}px Anton, sans-serif`;
-  ctx.fillText('04', bx, by + Math.round(16 * u));
-  ctx.restore();
+  ctx.font = `${Math.round(22 * u)}px 'Bebas Neue', sans-serif`;
+  ctx.fillText('★★★★★  PURE COASTAL ADRENALINE', W / 2, headerH * 0.16);
 
-  // Panel grid: hero big in the center, four crews around it.
-  const margin = Math.round(28 * u);
-  const gap = Math.round(14 * u);
-  const top = H * 0.21;
-  const bottom = H * 0.82;
-  const ph = bottom - top;
-  const heroW = W * 0.42;
-  const sideW = (W - margin * 2 - heroW - gap * 2) / 2;
-  const heroX = margin + sideW + gap;
-  const rowH = (ph - gap) / 2;
-  const order = CREWS.filter((c) => c.key !== heroCrew);
-  const hero = CREWS.find((c) => c.key === heroCrew) || CREWS[0];
-  const [tl, tr, bl, br] = order;
-  panel(ctx, images[hero.key], heroX, top, heroW, ph, hero.label);
-  panel(ctx, images[tl.key], margin, top, sideW, rowH, tl.label);
-  panel(ctx, images[tr.key], W - margin - sideW, top, sideW, rowH, tr.label);
-  panel(ctx, images[bl.key], margin, top + rowH + gap, sideW, rowH, bl.label);
-  panel(ctx, images[br.key], W - margin - sideW, top + rowH + gap, sideW, rowH, br.label);
+  // Panel area.
+  const top = H * 0.17;
+  const bottom = H * 0.88;
+  const gap = 10 * u;
+  const sideW = W * 0.30;
+  const midX0 = W * 0.35;
+  const midX1 = W * 0.65;
+  const midH = (bottom - top - gap) / 2;
+  const boxes = {
+    hero: { x: midX0, y: top, w: midX1 - midX0, h: bottom - top },
+    hacker: { x: W * 0.02, y: top, w: sideW, h: midH },
+    broker: { x: W * 0.68, y: top, w: sideW, h: midH },
+    enforcer: { x: W * 0.02, y: top + midH + gap, w: sideW, h: midH },
+    fixer: { x: W * 0.68, y: top + midH + gap, w: sideW, h: midH },
+  };
+  for (const crew of CREWS) {
+    drawPanel(ctx, boxes[crew.key], state.photos[crew.key], crew.name, W);
+  }
 
-  // Stars + adrenaline line.
-  drawStars(ctx, W / 2, H * 0.855, Math.round(34 * u));
-  ctx.save();
-  ctx.font = `${Math.round(30 * u)}px "Bebas Neue", sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = CREAM;
-  ctx.fillText('PURE COASTAL ADRENALINE', W / 2, H * 0.895);
-  ctx.restore();
-
-  // Tagline bar at the bottom.
-  const barH = H * 0.055;
-  ctx.fillStyle = 'rgba(11,6,24,0.92)';
-  ctx.fillRect(0, H - barH, W, barH);
+  // Footer: tagline + ISSUE 04 seal.
+  ctx.fillStyle = '#f5efff';
+  ctx.font = `${Math.round(24 * u)}px 'Bebas Neue', sans-serif`;
+  ctx.fillText(state.tagline.toUpperCase(), W / 2, H * 0.945);
   ctx.fillStyle = GOLD;
-  ctx.fillRect(0, H - barH, W, 3);
-  ctx.save();
-  ctx.font = `${Math.round(30 * u)}px "Bebas Neue", sans-serif`;
+  ctx.font = `${Math.round(20 * u)}px Anton, sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.fillText('ISSUE 04', W * 0.98, H * 0.945);
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = CREAM;
-  ctx.fillText(tagline, W / 2, H - barH / 2 + 2);
-  ctx.restore();
 }

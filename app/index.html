@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEON TIDE — Five-Crew Cover Studio</title>
-<link rel="stylesheet" href="style.css">
+<title>NEON TIDE — GTA-style cover studio</title>
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <header class="topbar">
@@ -12,59 +12,73 @@
     <span class="brand-title">NEON TIDE</span>
     <span class="brand-script">After Midnight</span>
   </div>
-  <div class="brand-sub">FIVE CREWS &middot; ONE HARBOR &middot; NO MERCY &middot; ISSUE 04</div>
+  <div class="issue">ISSUE 04</div>
 </header>
+
 <main class="studio">
-  <section class="controls" aria-label="Cover controls">
+  <section class="preview-pane">
+    <canvas id="poster" width="1080" height="1080" aria-label="Cover preview"></canvas>
+    <p class="hint">Live preview — every change redraws the poster.</p>
+  </section>
+
+  <section class="controls">
     <h2>Make your cover</h2>
-    <div class="field">
-      <label for="photoFile">Your photo</label>
+
+    <label class="field">
+      <span>Your photo</span>
       <input id="photoFile" type="file" accept="image/*">
-      <p class="hint">Pick a photo from your machine. It never leaves your browser.</p>
-    </div>
+    </label>
+
     <div class="field">
-      <label>Or start from a crew sample</label>
+      <span>Or pick a crew photo</span>
       <div class="samples" id="samples"></div>
     </div>
+
     <div class="field">
-      <label for="panelSelect">Put the photo in</label>
-      <select id="panelSelect">
-        <option value="all">All five panels</option>
-        <option value="hero" selected>The Getaway (center)</option>
-        <option value="hacker">The Hacker</option>
-        <option value="broker">The Broker</option>
-        <option value="enforcer">The Enforcer</option>
-        <option value="fixer">The Fixer</option>
-      </select>
+      <span>Fill panel</span>
+      <div class="panels" id="panels">
+        <button data-panel="hero" class="panel-btn active">The Getaway</button>
+        <button data-panel="hacker" class="panel-btn">The Hacker</button>
+        <button data-panel="broker" class="panel-btn">The Broker</button>
+        <button data-panel="enforcer" class="panel-btn">The Enforcer</button>
+        <button data-panel="fixer" class="panel-btn">The Fixer</button>
+      </div>
     </div>
-    <div class="field">
-      <label for="titleInput">Title</label>
+
+    <label class="field">
+      <span>Title</span>
       <input id="titleInput" type="text" value="NEON TIDE" maxlength="24">
-    </div>
-    <div class="field">
-      <label for="scriptInput">Script line</label>
+    </label>
+
+    <label class="field">
+      <span>Script line</span>
       <input id="scriptInput" type="text" value="After Midnight" maxlength="32">
-    </div>
+    </label>
+
+    <label class="field">
+      <span>Tagline</span>
+      <input id="taglineInput" type="text" value="FIVE CREWS · ONE HARBOR · NO MERCY" maxlength="48">
+    </label>
+
     <div class="field">
-      <label for="tagInput">Tagline</label>
-      <input id="tagInput" type="text" value="FIVE CREWS &middot; ONE HARBOR &middot; NO MERCY" maxlength="64">
+      <span>Export size</span>
+      <div class="sizes" id="sizes">
+        <button data-size="1080x1080" class="size-btn active">1080 × 1080</button>
+        <button data-size="1080x1350" class="size-btn">1080 × 1350</button>
+        <button data-size="1920x1080" class="size-btn">1920 × 1080</button>
+      </div>
     </div>
-    <div class="field">
-      <label for="sizeSelect">Export size</label>
-      <select id="sizeSelect">
-        <option value="1080x1080" selected>Square &mdash; 1080 &times; 1080</option>
-        <option value="1080x1350">Portrait &mdash; 1080 &times; 1350</option>
-        <option value="1920x1080">Wide &mdash; 1920 &times; 1080</option>
-      </select>
-    </div>
-    <button id="exportBtn" class="export" type="button">Export PNG</button>
-    <p class="hint">Three steps: photo, caption, export. The cover is drawn on your machine, offline.</p>
-  </section>
-  <section class="preview" aria-label="Cover preview">
-    <canvas id="cover" width="1080" height="1080"></canvas>
-    <p class="preview-note">Live preview &mdash; the PNG you export looks exactly like this.</p>
+
+    <button id="exportBtn" class="export">Export PNG</button>
+    <p class="note">Photos stay on your machine — nothing is uploaded.</p>
   </section>
 </main>
-<script type="module" src="src/main.js"></script>
+
+<footer class="foot">
+  <span>★★★★★ PURE COASTAL ADRENALINE</span>
+  <span>NEON TIDE — a cover studio, not affiliated with Rockstar Games.</span>
+</footer>
+
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>

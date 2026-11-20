@@ -1,11 +1,21 @@
-// Fixed scenes for screenshots: ?shot=editor shows the page with a sample
-// photo loaded; ?shot=cover shows the cover alone. `photo` picks the sample
-// (samples/<photo>.jpg) and `caption` the title. window.__shotReady is set
-// once the cover has painted, so the screenshot script knows it is done.
-export async function runShot(shot, query, load) {
-  if (shot === 'cover') document.body.classList.add('shot-cover');
-  const photo = query.get('photo') ?? 'neon-hero';
-  const caption = query.get('caption') ?? 'NEON TIDE';
-  await load(`samples/${photo}.jpg`, caption);
-  requestAnimationFrame(() => requestAnimationFrame(() => { window.__shotReady = true; }));
+// NEON TIDE shot helper: the four screenshot presets the app can render
+// from a URL query, and the ready flag the screenshot script waits for.
+// A shot is `?shot=<name>&photo=<sample>&caption=<title>`; main.js applies
+// the photo and caption, then calls markReady() once the poster is drawn.
+
+export const SHOT_PRESETS = [
+  { name: '1-cover.jpg', photo: 'neon-hero', caption: 'NEON TIDE', size: '1080x1080' },
+  { name: '2-editor.jpg', photo: 'neon-broker', caption: 'Harbor Nights', size: '1280x720' },
+  { name: '3-cover-portrait.jpg', photo: 'neon-enforcer', caption: 'Midnight Run', size: '1080x1350' },
+  { name: '4-cover-square.jpg', photo: 'neon-fixer', caption: 'Vice After Dark', size: '1080x1080' },
+];
+
+export function markReady() {
+  window.__neonTideReady = true;
+  window.__shotReady = true;
+  document.documentElement.setAttribute('data-neon-ready', '1');
+}
+
+export function isReady() {
+  return window.__neonTideReady === true;
 }
