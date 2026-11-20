@@ -7,9 +7,10 @@
 **Neon Tide** turns your photos into a GTA 6 poster-style cover: a five-panel
 grid with callout chips, giant gradient lettering, a press quote, a tagline,
 a billing block, a gold seal and a barcode — in a Vice City sunset/neon
-grade. Upload one photo per panel, pick a grade, and export the cover as a
-PNG in three sizes (1920×1080, 1080×1350, 1080×1080). Fully offline, no
-Rockstar artwork, fonts are OFL-licensed.
+grade. Upload one photo per panel, crop and position each, fill several
+panels with one photo or several, edit the caption, and export the cover as
+a PNG in three post sizes (1920×1080, 1080×1350, 1080×1080). Fully offline,
+no Rockstar artwork, fonts are OFL-licensed.
 
 ## Run it
 

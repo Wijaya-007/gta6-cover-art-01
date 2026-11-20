@@ -1,8 +1,9 @@
-// Neon Tide editor: wires the controls to the cover renderer. The state holds
-// the five panels (each with its photo, callout label, zoom and pan), the
-// lettering and the grade; every change redraws the preview canvas at the
-// chosen export size, and Export downloads exactly that drawing as a PNG.
-// A `?shot=` query sets up a fixed scene for a screenshot instead (./shots.js).
+// Neon Tide editor: wires the controls to the cover renderer. The state
+// holds the five panels (each with its photo, callout label, zoom and pan),
+// the lettering and the grade; every change redraws the preview canvas at
+// the chosen export size, and Export downloads exactly that drawing as a
+// PNG. A `?shot=` query sets up a fixed scene for a screenshot instead
+// (see shots.js).
 import { drawCoverArt, layoutFor, panelAt, GRADES, SIZES } from './cover.js';
 import { runShot } from './shots.js';
 
@@ -11,15 +12,15 @@ const status = document.getElementById('status');
 
 // Five panels, each with a default sample photo, a callout role and a focus
 // point (the face, as a fraction of the photo's height) the crop centres on.
-// Default cover is NEON TIDE: the five crew photos cropped from Yans's
-// Gemini poster (neon-*.jpg), callouts THE GETAWAY / THE HACKER / THE BROKER
-// / THE ENFORCER / THE FIXER.
 const PANEL_DEFS = [
-  { id: 'hero', label: 'THE GETAWAY', sample: 'neon-hero.jpg', oy: 0, focus: 0.35 },
-  { id: 'insider', label: 'THE HACKER', sample: 'neon-hacker.jpg', oy: 0, focus: 0.30 },
-  { id: 'boss', label: 'THE BROKER', sample: 'neon-broker.jpg', oy: 0, focus: 0.22 },
-  { id: 'rider', label: 'THE ENFORCER', sample: 'neon-enforcer.jpg', oy: 0, focus: 0.28 },
-  { id: 'courier', label: 'THE FIXER', sample: 'neon-fixer.jpg', oy: 0, focus: 0.30 },
+  { id: 'hero', label: 'THE GETAWAY', sample: 'neon-hero.jpg', oy: 0, focus: 0.3 },
+  { id: 'hacker', label: 'THE HACKER', sample: 'neon-hacker.jpg', oy: 0, focus: 0.3 },
+  { id: 'broker', label: 'THE BROKER', sample: 'neon-broker.jpg', oy: 0, focus: 0.28 },
+  // The enforcer crop carries a sliver of the poster's dark background at
+  // its right edge, so it starts slightly zoomed in to push that sliver
+  // out of the panel.
+  { id: 'enforcer', label: 'THE ENFORCER', sample: 'neon-enforcer.jpg', oy: 0, focus: 0.3, zoom: 1.15 },
+  { id: 'fixer', label: 'THE FIXER', sample: 'neon-fixer.jpg', oy: 0, focus: 0.3 },
 ];
 
 const state = {
@@ -29,8 +30,11 @@ const state = {
   subtitle: 'After Midnight',
   tagline: 'FIVE CREWS · ONE HARBOR · NO MERCY',
   quote: 'PURE COASTAL ADRENALINE',
-  studio: 'A HARBORLIGHT PICTURES RELEASE',
-  panels: PANEL_DEFS.map((d) => ({ ...d, photo: null, zoom: 1, ox: 0, oy: d.oy ?? 0 })),
+  issue: 'ISSUE 04',
+  bottom: 'IN THEATERS FRIDAY',
+  studio: 'A HARBORLIGHT PICTURES RELEASE · SHOT ON 35MM FILM · REAL LOCATIONS',
+  seal: ['ORIGINAL', 'SOUNDTRACK'],
+  panels: PANEL_DEFS.map((d) => ({ ...d, photo: null, zoom: d.zoom ?? 1, ox: 0, oy: d.oy ?? 0 })),
 };
 
 let selected = 'hero';
@@ -218,9 +222,11 @@ async function boot() {
     const def = PANEL_DEFS.find((d) => d.id === p.id);
     try { p.photo = await loadImage(`samples/${def.sample}`); } catch { /* panel stays empty */ }
   }
-  const shot = new URLSearchParams(location.search).get('shot');
+  status.textContent = 'All five crew photos loaded — click a panel to edit it.';
+  const params = new URLSearchParams(location.search);
+  const shot = params.get('shot');
   if (shot) {
-    await runShot(shot, new URLSearchParams(location.search), state, { redraw, loadImage });
+    await runShot(shot, params, state, { redraw, loadImage });
   } else {
     redraw();
   }

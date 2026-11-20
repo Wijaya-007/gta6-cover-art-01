@@ -1,35 +1,17 @@
-// Fixed scenes for screenshots: ?shot=cover shows the cover alone (the app's
-// own drawing at the chosen export size), ?shot=editor shows the editor with
-// the five sample photos loaded. Query params: size (landscape, portrait,
-// square), grade, title, subtitle, tagline, quote. window.__shotReady is set
-// once the scene has painted, so a screenshot tool knows when to capture.
+// Screenshot scenes for Neon Tide: `?shot=cover` shows the exported cover
+// full-bleed (the editor chrome hidden), `?shot=editor` shows the editor
+// with all five sample photos loaded. Either way the scene ends by setting
+// window.__shotReady, which the screenshot script waits for.
 import { SIZES } from './cover.js';
 
-export async function runShot(shot, query, state, app) {
-  const sizeKey = query.get('size') || 'landscape';
-  if (state && sizeKey in SIZES) state.sizeKey = sizeKey;
-  if (state) {
-    const set = (key, param) => {
-      const v = query.get(param);
-      if (v !== null) state[key] = v;
-    };
-    set('title', 'title');
-    set('subtitle', 'subtitle');
-    set('tagline', 'tagline');
-    set('quote', 'quote');
-    set('grade', 'grade');
+export async function runShot(shot, params, state, hooks) {
+  const sizeKey = params.get('size') || 'landscape';
+  if (SIZES[sizeKey]) state.sizeKey = sizeKey;
+  hooks.redraw();
+  if (shot === 'cover') {
+    document.body.classList.add('shot-cover');
   }
-  if (shot === 'cover') document.body.classList.add('shot-cover');
-  // Make sure every panel has its sample photo before the first paint.
-  if (state) {
-    const samples = { hero: 'neon-hero.jpg', insider: 'neon-hacker.jpg', boss: 'neon-broker.jpg', rider: 'neon-enforcer.jpg', courier: 'neon-fixer.jpg' };
-    for (const p of state.panels) {
-      if (!p.photo) {
-        try { p.photo = await app.loadImage(`samples/${samples[p.id]}`); } catch { /* leave empty */ }
-      }
-    }
-  }
-  app.redraw();
+  // Let the canvas paint and the fonts settle before the shot is taken.
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.__shotReady = true;
 }

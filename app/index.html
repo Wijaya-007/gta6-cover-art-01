@@ -1,43 +1,45 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Neon Tide — GTA-style cover studio</title>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header class="masthead">
+  <h1>NEON TIDE</h1>
+  <p>Turn your photos into a five-crew GTA-style poster. Pick a photo per
+  panel, drag to position it, edit the caption, export a PNG.</p>
+</header>
 <main class="app">
-  <section class="controls" aria-label="Cover controls">
-    <h1>NEON TIDE</h1>
-    <p class="tag">Five crews. One harbor. Your photos become a GTA-style poster.</p>
-
+  <section class="stage">
+    <canvas id="cover" width="1920" height="1080"></canvas>
+    <p id="status" class="status">Loading the crew photos…</p>
+  </section>
+  <aside class="controls">
     <h2>Panels</h2>
-    <p class="hint">Click a panel on the cover to pick it, then drag its photo to move it.</p>
+    <p class="hint">Click a panel on the cover to select it, drag it to pan,
+    use the slider to zoom. “Use sample” loads that crew member's photo.</p>
     <div id="panels"></div>
-    <button id="fill-all" type="button">Fill all panels with the hero photo</button>
+    <button type="button" id="fill-all">Fill all panels with the hero photo</button>
 
     <h2>Lettering</h2>
-    <label>Title <input id="title" type="text" maxlength="16" value="NEON TIDE"></label>
-    <label>Script line <input id="subtitle" type="text" maxlength="30" value="After Midnight"></label>
-    <label>Tagline <input id="tagline" type="text" maxlength="60" value="FIVE CREWS · ONE HARBOR · NO MERCY"></label>
-    <label>Press quote <input id="quote" type="text" maxlength="40" value="PURE COASTAL ADRENALINE"></label>
-    <label>Studio line <input id="studio" type="text" maxlength="60" value="A HARBORLIGHT PICTURES RELEASE"></label>
+    <label>Title <input type="text" id="title" value="NEON TIDE" maxlength="24"></label>
+    <label>Subtitle <input type="text" id="subtitle" value="After Midnight" maxlength="32"></label>
+    <label>Tagline <input type="text" id="tagline" value="FIVE CREWS · ONE HARBOR · NO MERCY" maxlength="48"></label>
+    <label>Press quote <input type="text" id="quote" value="PURE COASTAL ADRENALINE" maxlength="48"></label>
+    <label>Billing <input type="text" id="studio" value="A HARBORLIGHT PICTURES RELEASE · SHOT ON 35MM FILM · REAL LOCATIONS" maxlength="96"></label>
 
-    <h2>Colour grade</h2>
+    <h2>Grade</h2>
     <div id="grades" class="grades"></div>
 
-    <h2>Export size</h2>
+    <h2>Size</h2>
     <div id="sizes" class="sizes"></div>
 
-    <button id="export" type="button">Export PNG</button>
-    <p id="status" role="status"></p>
-    <p class="fine">Your photos never leave this machine. Lettering: Anton, Pacifico and Bebas Neue (SIL Open Font License). No Rockstar logo, artwork or font.</p>
-  </section>
-  <section class="stage">
-    <canvas id="cover" width="1920" height="1080" aria-label="The cover preview"></canvas>
-  </section>
+    <button type="button" id="export" class="export">Export PNG</button>
+  </aside>
 </main>
-<script type="module" src="./src/main.js"></script>
+<script type="module" src="src/main.js"></script>
 </body>
 </html>
