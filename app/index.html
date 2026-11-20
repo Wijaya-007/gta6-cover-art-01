@@ -3,20 +3,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
+<title>Vice Heat — GTA-style cover studio</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <main class="app">
-  <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
+  <section class="controls" aria-label="Cover controls">
+    <h1>VICE HEAT</h1>
+    <p class="tag">Five friends. One coast. Your photos become a GTA-style poster.</p>
+
+    <h2>Panels</h2>
+    <p class="hint">Click a panel on the cover to pick it, then drag its photo to move it.</p>
+    <div id="panels"></div>
+    <button id="fill-all" type="button">Fill all panels with the hero photo</button>
+
+    <h2>Lettering</h2>
+    <label>Title <input id="title" type="text" maxlength="16" value="VICE HEAT"></label>
+    <label>Script line <input id="subtitle" type="text" maxlength="30" value="one last ride"></label>
+    <label>Tagline <input id="tagline" type="text" maxlength="60" value="FIVE FRIENDS · ONE COAST · NO WAY BACK"></label>
+    <label>Press quote <input id="quote" type="text" maxlength="40" value="PURE GOLDEN-HOUR MAYHEM"></label>
+    <label>Studio line <input id="studio" type="text" maxlength="60" value="A SUNSET PICTURES PRODUCTION · STARRING YOU"></label>
+
+    <h2>Colour grade</h2>
+    <div id="grades" class="grades"></div>
+
+    <h2>Export size</h2>
+    <div id="sizes" class="sizes"></div>
+
+    <button id="export" type="button">Export PNG</button>
     <p id="status" role="status"></p>
+    <p class="fine">Your photos never leave this machine. Lettering: Anton, Pacifico and Bebas Neue (SIL Open Font License). No Rockstar logo, artwork or font.</p>
   </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
+  <section class="stage">
+    <canvas id="cover" width="1920" height="1080" aria-label="The cover preview"></canvas>
+  </section>
 </main>
 <script type="module" src="./src/main.js"></script>
 </body>
