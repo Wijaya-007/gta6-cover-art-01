@@ -1,3 +1,6 @@
+/* NEON TIDE editor styles: a dark harbour-night theme with magenta,
+   cyan and gold accents, matching the poster the app draws. */
+
 @font-face {
   font-family: 'Anton';
   src: url('./fonts/Anton-Regular.woff2') format('woff2');

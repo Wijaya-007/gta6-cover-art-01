@@ -1,7 +1,7 @@
-// NEON TIDE editor: wires the controls to the cover renderer. Photos come
-// from the user's own machine (file input) or from the five crew samples
-// shipped with the app; nothing is uploaded. Export renders the poster at
-// the chosen size and downloads it as a PNG.
+// NEON TIDE editor: wires the page controls to the poster renderer.
+// Photos come from the user's own machine (file input) or from the five
+// crew samples shipped with the app; nothing is uploaded anywhere.
+// Export renders the poster at the chosen size and downloads it as a PNG.
 
 import { CREWS, DEFAULT_STATE, drawCover, ensureFonts } from './cover.js';
 import { markReady } from './shots.js';
@@ -31,7 +31,7 @@ async function redraw() {
   drawCover(canvas, state);
 }
 
-function setPanelPhoto(img) {
+function putPhoto(img) {
   state.photos[activePanel] = img;
   redraw();
 }
@@ -39,13 +39,14 @@ function setPanelPhoto(img) {
 async function loadSample(name) {
   try {
     const img = await loadImage(`./samples/${name}`);
-    setPanelPhoto(img);
+    putPhoto(img);
   } catch (_) {
     // A missing sample leaves the panel on its gradient placeholder.
   }
 }
 
-// Crew sample strip.
+// Crew sample strip: one thumbnail per crew; clicking one fills the
+// currently selected panel with that crew's photo.
 const samplesEl = document.getElementById('samples');
 for (const crew of CREWS) {
   const img = document.createElement('img');
@@ -56,7 +57,7 @@ for (const crew of CREWS) {
   samplesEl.appendChild(img);
 }
 
-// Panel selector.
+// Panel selector: which panel the next photo (upload or sample) fills.
 document.getElementById('panels').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-panel]');
   if (!btn) return;
@@ -65,7 +66,7 @@ document.getElementById('panels').addEventListener('click', (e) => {
   activePanel = btn.dataset.panel;
 });
 
-// Photo upload from the user's machine.
+// Photo upload from the user's own machine.
 document.getElementById('photoFile').addEventListener('change', (e) => {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
@@ -73,13 +74,13 @@ document.getElementById('photoFile').addEventListener('change', (e) => {
   reader.onload = async () => {
     try {
       const img = await loadImage(reader.result);
-      setPanelPhoto(img);
+      putPhoto(img);
     } catch (_) {}
   };
   reader.readAsDataURL(file);
 });
 
-// Caption inputs.
+// Caption inputs: title, script line and tagline, live-redrawing.
 document.getElementById('titleInput').addEventListener('input', (e) => {
   state.title = e.target.value || 'NEON TIDE';
   redraw();
@@ -93,7 +94,7 @@ document.getElementById('taglineInput').addEventListener('input', (e) => {
   redraw();
 });
 
-// Export size.
+// Export size picker.
 document.getElementById('sizes').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-size]');
   if (!btn) return;
@@ -102,7 +103,7 @@ document.getElementById('sizes').addEventListener('click', (e) => {
   exportSize = btn.dataset.size;
 });
 
-// Export: render at the chosen size and download a PNG.
+// Export: render the poster at the chosen size and download a PNG.
 document.getElementById('exportBtn').addEventListener('click', async () => {
   const [w, h] = exportSize.split('x').map(Number);
   const off = document.createElement('canvas');
@@ -120,9 +121,9 @@ document.getElementById('exportBtn').addEventListener('click', async () => {
   }, 'image/png');
 });
 
-// Screenshot mode (?shot=cover|editor&photo=<sample>&caption=<text>): load
-// one sample into the hero panel and set the caption, so the shot script can
-// capture the app in a known state.
+// Screenshot mode (?shot=cover|editor&photo=<sample>&caption=<text>):
+// load one sample into the hero panel and set the title, so the shot
+// script captures the app in a known state.
 async function applyShotParams() {
   const q = new URLSearchParams(location.search);
   const photo = q.get('photo');
@@ -140,7 +141,8 @@ async function applyShotParams() {
   }
 }
 
-// Boot: preload the five crew samples, then draw.
+// Boot: preload the five crew samples into their panels, apply any shot
+// parameters, draw the poster, then signal the shot script it is ready.
 (async () => {
   for (const crew of CREWS) {
     try {

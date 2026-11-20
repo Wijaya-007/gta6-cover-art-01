@@ -1,9 +1,10 @@
-// NEON TIDE cover renderer: draws the five-crew GTA-style poster on a
-// canvas. Layout: a tall hero panel in the centre (The Getaway), the other
-// four crews in the corners (Hacker / Broker top, Enforcer / Fixer bottom),
-// title + script + five stars across the top, tagline + ISSUE 04 at the foot.
-// Photos are drawn cover-fit inside their gold frames; a missing photo gets
-// a neon gradient placeholder with the crew name.
+// NEON TIDE poster renderer: draws the five-crew GTA-style poster onto
+// a canvas. The layout is a tall hero panel in the middle (The Getaway),
+// the other four crews in the corners (Hacker and Broker on top, Enforcer
+// and Fixer below), the title, script line and five stars across the top,
+// and the tagline plus the ISSUE 04 seal at the foot. Each photo is drawn
+// cover-fit inside a gold frame; a panel with no photo yet gets a neon
+// gradient placeholder carrying the crew name.
 
 export const CREWS = [
   { key: 'hero', name: 'THE GETAWAY', sample: 'neon-hero.jpg' },
@@ -24,13 +25,17 @@ const GOLD = '#ffc93c';
 const MAGENTA = '#ff2e88';
 const CYAN = '#19e3ff';
 
+// Draw an image so it fills the box, cropping the overflow (cover fit).
 function coverFit(ctx, img, x, y, w, h) {
-  const s = Math.max(w / img.width, h / img.height);
-  const dw = img.width * s;
-  const dh = img.height * s;
+  const scale = Math.max(w / img.width, h / img.height);
+  const dw = img.width * scale;
+  const dh = img.height * scale;
   ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
+// One framed panel: the photo (or a gradient placeholder), a neon wash
+// so every photo shares the same sunset grade, a gold frame, and a
+// callout chip with the crew name along the bottom.
 function drawPanel(ctx, box, img, label, W) {
   const { x, y, w, h } = box;
   ctx.save();
@@ -46,7 +51,6 @@ function drawPanel(ctx, box, img, label, W) {
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
   }
-  // Neon wash so every photo shares the same sunset grade.
   const wash = ctx.createLinearGradient(x, y, x, y + h);
   wash.addColorStop(0, 'rgba(255,46,136,0.12)');
   wash.addColorStop(1, 'rgba(25,227,255,0.10)');
@@ -54,22 +58,30 @@ function drawPanel(ctx, box, img, label, W) {
   ctx.fillRect(x, y, w, h);
   ctx.restore();
 
-  // Gold frame.
   ctx.strokeStyle = GOLD;
   ctx.lineWidth = Math.max(2, W * 0.003);
   ctx.strokeRect(x, y, w, h);
 
-  // Callout chip with the crew name.
+  // Callout chip with the crew name, shrunk to fit the panel width so a
+  // long name (THE GETAWAY on the narrow hero panel) never overflows.
   const chipH = Math.max(22, h * 0.13);
   ctx.fillStyle = GOLD;
   ctx.fillRect(x, y + h - chipH, w, chipH);
   ctx.fillStyle = '#160b2e';
-  ctx.font = `${Math.round(chipH * 0.62)}px 'Bebas Neue', sans-serif`;
+  let chipFont = Math.round(chipH * 0.62);
+  ctx.font = `${chipFont}px 'Bebas Neue', sans-serif`;
+  const maxLabelW = w - 8;
+  while (chipFont > 10 && ctx.measureText(label).width > maxLabelW) {
+    chipFont -= 1;
+    ctx.font = `${chipFont}px 'Bebas Neue', sans-serif`;
+  }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(label, x + w / 2, y + h - chipH / 2 + 1);
 }
 
+// Load the three poster fonts so the canvas can use them; if they fail,
+// the poster still draws with system fonts.
 export async function ensureFonts() {
   try {
     await Promise.all([
@@ -86,9 +98,9 @@ export function drawCover(canvas, state) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width;
   const H = canvas.height;
-  const u = W / 1080; // scale unit so the same layout works at any size
+  const u = W / 1080; // scale unit: the same layout works at any export size
 
-  // Sunset background.
+  // Sunset background, deep purple fading down to near-black.
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, '#2a0a4d');
   bg.addColorStop(0.45, '#12082a');
@@ -96,9 +108,12 @@ export function drawCover(canvas, state) {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Header: title, script, stars.
+  // Header: five stars, title, script line.
   const headerH = H * 0.15;
   ctx.textAlign = 'center';
+  ctx.fillStyle = GOLD;
+  ctx.font = `${Math.round(22 * u)}px 'Bebas Neue', sans-serif`;
+  ctx.fillText('★★★★★  PURE COASTAL ADRENALINE', W / 2, headerH * 0.16);
   ctx.fillStyle = MAGENTA;
   ctx.font = `${Math.round(64 * u)}px Anton, sans-serif`;
   ctx.shadowColor = 'rgba(255,46,136,0.8)';
@@ -108,11 +123,8 @@ export function drawCover(canvas, state) {
   ctx.fillStyle = CYAN;
   ctx.font = `${Math.round(30 * u)}px Pacifico, cursive`;
   ctx.fillText(state.script, W / 2, headerH * 0.88);
-  ctx.fillStyle = GOLD;
-  ctx.font = `${Math.round(22 * u)}px 'Bebas Neue', sans-serif`;
-  ctx.fillText('★★★★★  PURE COASTAL ADRENALINE', W / 2, headerH * 0.16);
 
-  // Panel area.
+  // Panel grid: hero tall in the centre, four crews at the corners.
   const top = H * 0.17;
   const bottom = H * 0.88;
   const gap = 10 * u;
@@ -131,7 +143,7 @@ export function drawCover(canvas, state) {
     drawPanel(ctx, boxes[crew.key], state.photos[crew.key], crew.name, W);
   }
 
-  // Footer: tagline + ISSUE 04 seal.
+  // Footer: tagline centred, ISSUE 04 seal at the right.
   ctx.fillStyle = '#f5efff';
   ctx.font = `${Math.round(24 * u)}px 'Bebas Neue', sans-serif`;
   ctx.fillText(state.tagline.toUpperCase(), W / 2, H * 0.945);
