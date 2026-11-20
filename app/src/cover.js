@@ -1,4 +1,4 @@
-// Vice Heat cover renderer: draws a multi-panel GTA-style poster onto a canvas.
+// Neon Tide cover renderer: draws a multi-panel GTA-style poster onto a canvas.
 // The cover is built from a state object:
 //   { size: {w, h}, grade, title, subtitle, tagline, quote, studio,
 //     panels: [{ id, photo, label, zoom, ox, oy }] }
@@ -53,7 +53,7 @@ export function layoutFor(w, h) {
   panels.push({ id: 'boss', x: rx0, y: gridTop, w: rx1 - rx0, h: gridMid - gap / 2 - gridTop });
   panels.push({ id: 'rider', x: lx0, y: gridMid + gap / 2, w: lx1 - lx0, h: bot - (gridMid + gap / 2) });
   panels.push({ id: 'courier', x: rx0, y: gridMid + gap / 2, w: rx1 - rx0, h: bot - (gridMid + gap / 2) });
-  return { panels, stacked, titleY: 0.545 * h, subtitleY: 0.625 * h, taglineY: 0.71 * h, billingY: 0.925 * h, topBarY: 0.048 * h };
+  return { panels, stacked, titleY: 0.545 * h, subtitleY: 0.60 * h, taglineY: 0.71 * h, billingY: 0.925 * h, topBarY: 0.048 * h };
 }
 
 // Draws one panel photo cover-fit inside rect, with a zoom factor and a pan
@@ -172,7 +172,7 @@ function drawTitle(ctx, w, layout, title, subtitle) {
   }
 }
 
-// Top bar: five gold stars, the press quote, and a VOL. 1 chip.
+// Top bar: five gold stars, the press quote, and an ISSUE 04 chip.
 function drawTopBar(ctx, w, layout, quote) {
   const y = layout.topBarY;
   const starSize = w * 0.022;
@@ -189,7 +189,7 @@ function drawTopBar(ctx, w, layout, quote) {
     ctx.textAlign = 'center';
     ctx.fillText(`"${q}"`, w / 2, y);
   }
-  const chip = 'VOL. 1';
+  const chip = 'ISSUE 04';
   const size = w * 0.018;
   ctx.font = `bold ${size}px "Bebas Neue", sans-serif`;
   const tw = ctx.measureText(chip).width;
@@ -239,10 +239,10 @@ function drawBilling(ctx, w, layout, studio) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(line, w / 2, layout.billingY);
-  ctx.fillText('SHOT ON YOUR OWN CAMERA  ·  GRADED BY HAND', w / 2, layout.billingY + size * 1.5);
+  ctx.fillText('SHOT ON 35MM FILM  ·  REAL LOCATIONS', w / 2, layout.billingY + size * 1.5);
 }
 
-// A gold starburst seal reading ORIGINAL COVER ART.
+// A gold starburst seal reading ORIGINAL SOUNDTRACK.
 function drawSeal(ctx, cx, cy, r) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -272,7 +272,7 @@ function drawSeal(ctx, cx, cy, r) {
   const s = r * 0.24;
   ctx.font = `bold ${s}px "Bebas Neue", sans-serif`;
   ctx.fillText('ORIGINAL', 0, -s * 0.55);
-  ctx.fillText('COVER ART', 0, s * 0.55);
+  ctx.fillText('SOUNDTRACK', 0, s * 0.55);
   ctx.font = `${s * 0.8}px sans-serif`;
   ctx.fillStyle = '#f7c948';
   ctx.fillText('★★★', 0, s * 1.35);
@@ -338,13 +338,13 @@ export function drawCoverArt(canvas, state) {
   drawTopBar(ctx, w, layout, state.quote);
   drawTitle(ctx, w, layout, state.title, state.subtitle);
   drawTagline(ctx, w, layout, state.tagline);
-  // COMING SOON, bottom left.
+  // IN THEATERS FRIDAY, bottom left.
   const csSize = w * 0.024;
   ctx.font = `bold ${csSize}px "Bebas Neue", sans-serif`;
   ctx.fillStyle = '#ff7ad9';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText('COMING SOON', w * 0.028, layout.billingY);
+  ctx.fillText('IN THEATERS FRIDAY', w * 0.028, layout.billingY);
   drawBilling(ctx, w, layout, state.studio);
   // Seal and barcode, bottom right.
   const sealR = w * 0.052;

@@ -22,7 +22,7 @@ export async function runShot(shot, query, state, app) {
   if (shot === 'cover') document.body.classList.add('shot-cover');
   // Make sure every panel has its sample photo before the first paint.
   if (state) {
-    const samples = { hero: 'hero.jpg', insider: 'insider.jpg', boss: 'pier.jpg', rider: 'rider.jpg', courier: 'courier.jpg' };
+    const samples = { hero: 'neon-hero.jpg', insider: 'neon-hacker.jpg', boss: 'neon-broker.jpg', rider: 'neon-enforcer.jpg', courier: 'neon-fixer.jpg' };
     for (const p of state.panels) {
       if (!p.photo) {
         try { p.photo = await app.loadImage(`samples/${samples[p.id]}`); } catch { /* leave empty */ }

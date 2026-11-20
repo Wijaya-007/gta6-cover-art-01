@@ -1,4 +1,4 @@
-// Vice Heat editor: wires the controls to the cover renderer. The state holds
+// Neon Tide editor: wires the controls to the cover renderer. The state holds
 // the five panels (each with its photo, callout label, zoom and pan), the
 // lettering and the grade; every change redraws the preview canvas at the
 // chosen export size, and Export downloads exactly that drawing as a PNG.
@@ -11,22 +11,25 @@ const status = document.getElementById('status');
 
 // Five panels, each with a default sample photo, a callout role and a focus
 // point (the face, as a fraction of the photo's height) the crop centres on.
+// Default cover is NEON TIDE: the five crew photos cropped from Yans's
+// Gemini poster (neon-*.jpg), callouts THE GETAWAY / THE HACKER / THE BROKER
+// / THE ENFORCER / THE FIXER.
 const PANEL_DEFS = [
-  { id: 'hero', label: 'THE DRIVER', sample: 'hero.jpg', oy: 0, focus: 0.30 },
-  { id: 'insider', label: 'THE INSIDER', sample: 'insider.jpg', oy: 0, focus: 0.30 },
-  { id: 'boss', label: 'THE BOSS', sample: 'pier.jpg', oy: 0, focus: 0.22 },
-  { id: 'rider', label: 'THE RIDER', sample: 'rider.jpg', oy: 0, focus: 0.28 },
-  { id: 'courier', label: 'THE COURIER', sample: 'courier.jpg', oy: 0.08, focus: 0.28 },
+  { id: 'hero', label: 'THE GETAWAY', sample: 'neon-hero.jpg', oy: 0, focus: 0.35 },
+  { id: 'insider', label: 'THE HACKER', sample: 'neon-hacker.jpg', oy: 0, focus: 0.30 },
+  { id: 'boss', label: 'THE BROKER', sample: 'neon-broker.jpg', oy: 0, focus: 0.22 },
+  { id: 'rider', label: 'THE ENFORCER', sample: 'neon-enforcer.jpg', oy: 0, focus: 0.28 },
+  { id: 'courier', label: 'THE FIXER', sample: 'neon-fixer.jpg', oy: 0, focus: 0.30 },
 ];
 
 const state = {
   sizeKey: 'landscape',
   grade: 'sunset',
-  title: 'VICE HEAT',
-  subtitle: 'one last ride',
-  tagline: 'FIVE FRIENDS · ONE COAST · NO WAY BACK',
-  quote: 'PURE GOLDEN-HOUR MAYHEM',
-  studio: 'A SUNSET PICTURES PRODUCTION · STARRING YOU',
+  title: 'NEON TIDE',
+  subtitle: 'After Midnight',
+  tagline: 'FIVE CREWS · ONE HARBOR · NO MERCY',
+  quote: 'PURE COASTAL ADRENALINE',
+  studio: 'A HARBORLIGHT PICTURES RELEASE',
   panels: PANEL_DEFS.map((d) => ({ ...d, photo: null, zoom: 1, ox: 0, oy: d.oy ?? 0 })),
 };
 
@@ -194,9 +197,9 @@ document.getElementById('export').addEventListener('click', () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     const s = currentSize();
-    a.download = `vice-heat-${s.w}x${s.h}.png`;
+    a.download = `neon-tide-${s.w}x${s.h}.png`;
     a.click();
-    status.textContent = `Saved vice-heat-${s.w}x${s.h}.png`;
+    status.textContent = `Saved neon-tide-${s.w}x${s.h}.png`;
   }, 'image/png');
 });
 
