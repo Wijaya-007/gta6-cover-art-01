@@ -3,42 +3,67 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Neon Tide — GTA-style cover studio</title>
+<title>NEON TIDE — Five-Crew Cover Studio</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="masthead">
-  <h1>NEON TIDE</h1>
-  <p>Turn your photos into a five-crew GTA-style poster. Pick a photo per
-  panel, drag to position it, edit the caption, export a PNG.</p>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-title">NEON TIDE</span>
+    <span class="brand-script">After Midnight</span>
+  </div>
+  <div class="brand-sub">FIVE CREWS &middot; ONE HARBOR &middot; NO MERCY &middot; ISSUE 04</div>
 </header>
-<main class="app">
-  <section class="stage">
-    <canvas id="cover" width="1920" height="1080"></canvas>
-    <p id="status" class="status">Loading the crew photos…</p>
+<main class="studio">
+  <section class="controls" aria-label="Cover controls">
+    <h2>Make your cover</h2>
+    <div class="field">
+      <label for="photoFile">Your photo</label>
+      <input id="photoFile" type="file" accept="image/*">
+      <p class="hint">Pick a photo from your machine. It never leaves your browser.</p>
+    </div>
+    <div class="field">
+      <label>Or start from a crew sample</label>
+      <div class="samples" id="samples"></div>
+    </div>
+    <div class="field">
+      <label for="panelSelect">Put the photo in</label>
+      <select id="panelSelect">
+        <option value="all">All five panels</option>
+        <option value="hero" selected>The Getaway (center)</option>
+        <option value="hacker">The Hacker</option>
+        <option value="broker">The Broker</option>
+        <option value="enforcer">The Enforcer</option>
+        <option value="fixer">The Fixer</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="titleInput">Title</label>
+      <input id="titleInput" type="text" value="NEON TIDE" maxlength="24">
+    </div>
+    <div class="field">
+      <label for="scriptInput">Script line</label>
+      <input id="scriptInput" type="text" value="After Midnight" maxlength="32">
+    </div>
+    <div class="field">
+      <label for="tagInput">Tagline</label>
+      <input id="tagInput" type="text" value="FIVE CREWS &middot; ONE HARBOR &middot; NO MERCY" maxlength="64">
+    </div>
+    <div class="field">
+      <label for="sizeSelect">Export size</label>
+      <select id="sizeSelect">
+        <option value="1080x1080" selected>Square &mdash; 1080 &times; 1080</option>
+        <option value="1080x1350">Portrait &mdash; 1080 &times; 1350</option>
+        <option value="1920x1080">Wide &mdash; 1920 &times; 1080</option>
+      </select>
+    </div>
+    <button id="exportBtn" class="export" type="button">Export PNG</button>
+    <p class="hint">Three steps: photo, caption, export. The cover is drawn on your machine, offline.</p>
   </section>
-  <aside class="controls">
-    <h2>Panels</h2>
-    <p class="hint">Click a panel on the cover to select it, drag it to pan,
-    use the slider to zoom. “Use sample” loads that crew member's photo.</p>
-    <div id="panels"></div>
-    <button type="button" id="fill-all">Fill all panels with the hero photo</button>
-
-    <h2>Lettering</h2>
-    <label>Title <input type="text" id="title" value="NEON TIDE" maxlength="24"></label>
-    <label>Subtitle <input type="text" id="subtitle" value="After Midnight" maxlength="32"></label>
-    <label>Tagline <input type="text" id="tagline" value="FIVE CREWS · ONE HARBOR · NO MERCY" maxlength="48"></label>
-    <label>Press quote <input type="text" id="quote" value="PURE COASTAL ADRENALINE" maxlength="48"></label>
-    <label>Billing <input type="text" id="studio" value="A HARBORLIGHT PICTURES RELEASE · SHOT ON 35MM FILM · REAL LOCATIONS" maxlength="96"></label>
-
-    <h2>Grade</h2>
-    <div id="grades" class="grades"></div>
-
-    <h2>Size</h2>
-    <div id="sizes" class="sizes"></div>
-
-    <button type="button" id="export" class="export">Export PNG</button>
-  </aside>
+  <section class="preview" aria-label="Cover preview">
+    <canvas id="cover" width="1080" height="1080"></canvas>
+    <p class="preview-note">Live preview &mdash; the PNG you export looks exactly like this.</p>
+  </section>
 </main>
 <script type="module" src="src/main.js"></script>
 </body>

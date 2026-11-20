@@ -1,17 +1,11 @@
-// Screenshot scenes for Neon Tide: `?shot=cover` shows the exported cover
-// full-bleed (the editor chrome hidden), `?shot=editor` shows the editor
-// with all five sample photos loaded. Either way the scene ends by setting
-// window.__shotReady, which the screenshot script waits for.
-import { SIZES } from './cover.js';
-
-export async function runShot(shot, params, state, hooks) {
-  const sizeKey = params.get('size') || 'landscape';
-  if (SIZES[sizeKey]) state.sizeKey = sizeKey;
-  hooks.redraw();
-  if (shot === 'cover') {
-    document.body.classList.add('shot-cover');
-  }
-  // Let the canvas paint and the fonts settle before the shot is taken.
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  window.__shotReady = true;
+// Fixed scenes for screenshots: ?shot=editor shows the page with a sample
+// photo loaded; ?shot=cover shows the cover alone. `photo` picks the sample
+// (samples/<photo>.jpg) and `caption` the title. window.__shotReady is set
+// once the cover has painted, so the screenshot script knows it is done.
+export async function runShot(shot, query, load) {
+  if (shot === 'cover') document.body.classList.add('shot-cover');
+  const photo = query.get('photo') ?? 'neon-hero';
+  const caption = query.get('caption') ?? 'NEON TIDE';
+  await load(`samples/${photo}.jpg`, caption);
+  requestAnimationFrame(() => requestAnimationFrame(() => { window.__shotReady = true; }));
 }
