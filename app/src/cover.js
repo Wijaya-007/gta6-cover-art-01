@@ -1,4 +1,4 @@
-// VICE HEAT — poster renderer (rebuild #10, Golden Mile formula).
+// VICE HEAT — poster renderer (rebuild #11, fresh photos from scratch).
 // Draws the GTA-style multi-panel cover on a 2D canvas. Pure canvas, no
 // network, no fonts outside the app's own WOFF2 files. All layout is
 // computed from the canvas size so the same code renders 1:1, 4:5 and 16:9.
@@ -9,14 +9,13 @@
 // subtitle, a tagline ribbon, a five-star press bar, a billing block, a
 // barcode and a gold seal finish it. Panels mix four character portraits
 // (facing different directions) with three action scenes (police,
-// helicopter, speedboat) — the airplane panel was dropped, helicopter +
-// airplane together were redundant flying vehicles.
+// helicopter, speedboat). All seven photos were generated fresh from
+// scratch for this build — new faces, new scenes, same roles.
 
 export const GRADES = [
-  // Sunset is the default grade and the poster's whole tone (Sundown
-  // Racket style): a LIGHT warm touch, not a flood. The photos are
-  // already golden-hour; the grade just warms them a little. Rebuild #9
-  // toned this down — the old 0.20/0.30 wash read as cheap CGI.
+  // Sunset is the default grade and the poster's whole tone: a LIGHT warm
+  // touch, not a flood. The photos are already golden-hour; the grade
+  // just warms them a little. The old 0.20/0.30 wash read as cheap CGI.
   { id: 'sunset', name: 'Sunset', tint: '#ff7a18', alpha: 0.1, warm: 0.12 },
   { id: 'neon', name: 'Neon', tint: '#ff2e88', alpha: 0.18, warm: 0.08 },
   { id: 'gold', name: 'Gold', tint: '#ffb400', alpha: 0.12, warm: 0.14 },

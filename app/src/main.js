@@ -1,11 +1,13 @@
-// VICE HEAT — cover studio editor (rebuild #10, Golden Mile formula).
+// VICE HEAT — cover studio editor (rebuild #11, fresh photos).
 // Upload your own photos (or keep the seven golden-hour samples), edit the
 // title, tagline and captions, pick one of five colour grades, then export
 // the poster as a PNG in three sizes. Everything runs offline in the page.
 // The cover is a hero-centre game cover: one large hero close-up in the
 // middle, six panels around it at slight alternating tilts, a huge striped
 // chrome title overlapping the hero. Samples mix four character portraits
-// with three action scenes (police, helicopter, speedboat).
+// with three action scenes (police, helicopter, speedboat). Every sample
+// photo in this build was generated fresh from scratch — new faces, new
+// scenes, same seven roles.
 
 import { drawCover, GRADES, PANELS, DEFAULT_STATE, EXPORT_SIZES } from './cover.js';
 
@@ -22,7 +24,7 @@ const SAMPLE_SRC = {
   lookout: 'samples/lookout.jpg',
 };
 
-const LS_KEY = 'vice-heat-studio-v10';
+const LS_KEY = 'vice-heat-studio-v11';
 
 // The editor opens on the Wide export: the hero-centre game cover reads
 // best wide, and every fallback below points here so a future reorder of
@@ -292,7 +294,7 @@ export function shotFromQuery() {
   const shot = params.get('shot');
   if (!shot) return null;
   const map = {
-    // Rebuild #10: the main cover shot is WIDE (1280x720) — the hero-centre
+    // Rebuild #11: the main cover shot is WIDE (1280x720) — the hero-centre
     // game-cover layout reads best wide, like the top-1 reference.
     '1-cover': { sizeId: 'wide', grade: 'sunset' },
     '2-editor': null, // full editor, captured as-is

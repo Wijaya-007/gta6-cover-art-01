@@ -1,4 +1,4 @@
-// VICE HEAT — screenshot definitions (rebuild #10, Golden Mile formula).
+// VICE HEAT — screenshot definitions (rebuild #11, fresh photos).
 // The four dossier screenshots: the WIDE hero-centre cover first (the main
 // image reads like a game cover), then the editor, then the two alternate
 // export sizes. The Playwright runner loads index.html with ?shot=<name>
