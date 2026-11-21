@@ -1,23 +1,59 @@
-// NEON TIDE shot helper: the four screenshot presets the app can render
-// from a URL query, plus the ready flag the screenshot script waits for.
-// A shot is `?shot=<name>&photo=<sample>&caption=<title>`; main.js applies
-// the photo and the caption, then calls markReady() once the poster is
-// drawn, so the screenshot lands on a finished frame.
+// VICE HEAT — screenshot definitions.
+// The four dossier screenshots: the cover first, then the editor, then the
+// two alternate export sizes. The Playwright runner loads index.html with
+// ?shot=<name> and captures the #poster canvas (or the whole editor for
+// shot 2). Sizes keep the dossier caps: long side <= 1280, each file
+// <= 256 KiB after JPEG quality tuning.
 
-export const SHOT_PRESETS = [
-  { name: '1-cover.jpg', photo: 'neon-hero', caption: 'NEON TIDE', size: '1080x1080' },
-  { name: '2-editor.jpg', photo: 'neon-broker', caption: 'Harbor Nights', size: '1280x720' },
-  { name: '3-cover-portrait.jpg', photo: 'neon-enforcer', caption: 'Midnight Run', size: '1080x1350' },
-  { name: '4-cover-square.jpg', photo: 'neon-fixer', caption: 'Vice After Dark', size: '1080x1080' },
+export const SHOTS = [
+  {
+    name: '1-cover',
+    file: '1-cover.jpg',
+    width: 1080,
+    height: 1080,
+    query: 'shot=1-cover',
+    caption: 'The VICE HEAT cover: classic collage grid, seven panels, striped centre title.',
+  },
+  {
+    name: '2-editor',
+    file: '2-editor.jpg',
+    width: 1280,
+    height: 720,
+    query: 'shot=2-editor',
+    caption: 'The studio editor: upload a photo per panel, edit captions, pick a grade.',
+  },
+  {
+    name: '3-cover-portrait',
+    file: '3-cover-portrait.jpg',
+    width: 1024,
+    height: 1280,
+    query: 'shot=3-cover-portrait',
+    caption: 'Portrait 4:5 export with the Gold grade.',
+  },
+  {
+    name: '4-cover-square',
+    file: '4-cover-square.jpg',
+    width: 1080,
+    height: 1080,
+    query: 'shot=4-cover-square',
+    caption: 'Square 1:1 export with the Neon grade.',
+  },
 ];
 
-// Signal that the poster is drawn and the page is ready to capture.
-export function markReady() {
-  window.__neonTideReady = true;
-  window.__shotReady = true;
-  document.documentElement.setAttribute('data-neon-ready', '1');
+// The shot for a query string, or null for the plain editor.
+export function shotForQuery(search) {
+  const params = new URLSearchParams(search);
+  const name = params.get('shot');
+  if (!name) return null;
+  return SHOTS.find((s) => s.name === name) || null;
 }
 
-export function isReady() {
-  return window.__neonTideReady === true;
+// Viewport the runner should use for a shot: the canvas size, clamped so
+// the long side never exceeds 1280 (the dossier's screenshot rule).
+export function viewportForShot(shot) {
+  const scale = Math.min(1, 1280 / Math.max(shot.width, shot.height));
+  return {
+    width: Math.round(shot.width * scale),
+    height: Math.round(shot.height * scale),
+  };
 }

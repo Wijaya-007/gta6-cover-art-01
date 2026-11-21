@@ -1,46 +1,39 @@
-// NEON TIDE — make.fun gta6-cover-art-01 entry (Node 22, stdlib only).
-// The app lives in app/ beside this file: plain static files a desktop
-// browser loads offline (index.html plus its ES modules, no library, no
-// network). This program hands the app in: it copies app/ and screenshots/
-// into the output directory and writes /output/dossier.json, the summary
-// the judge reads, using the vendored make.fun library.
-//
-// Run it locally with:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
+// VICE HEAT — entrypoint (gta6-cover-art-01, Node 22, stdlib only).
+// Copies app/ and screenshots/ into /output and writes the dossier the
+// bounty scorer checks. Run: `node main.ts` from the repo root.
 
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { buildDossier } from './vendor/makefun-app.ts';
 
-const repoRoot = fileURLToPath(new URL('.', import.meta.url));
-const outputDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const OUT = '/output';
 
-// Fail fast when the app folder is missing instead of handing in an empty
-// output directory the scorer would refuse.
-if (!existsSync(join(repoRoot, 'app'))) {
-  throw new Error('app/ is missing beside main.ts — nothing to hand in');
+function failFast(): void {
+  // The dossier refuses an app without index.html and screenshots with no
+  // image; catch those two mistakes here with a plain message instead.
+  if (!existsSync('app/index.html')) {
+    throw new Error('app/index.html is missing: the app is a directory of static files with its page at the root');
+  }
+  const shots = existsSync('screenshots') ? readdirSync('screenshots').filter((f) => /\.(png|jpe?g)$/i.test(f)) : [];
+  if (shots.length === 0) {
+    throw new Error('screenshots/ holds no PNG or JPEG: the dossier needs 3 or 4 renders');
+  }
+  console.log(`screenshots: ${shots.sort().join(', ')}`);
 }
 
-mkdirSync(outputDir, { recursive: true });
-cpSync(join(repoRoot, 'app'), join(outputDir, 'app'), { recursive: true });
-mkdirSync(join(outputDir, 'screenshots'), { recursive: true });
-if (existsSync(join(repoRoot, 'screenshots'))) {
-  cpSync(join(repoRoot, 'screenshots'), join(outputDir, 'screenshots'), { recursive: true });
-}
-
-// Caps the scorer enforces (see the kit's gate): only text_max_bytes
-// shapes the dossier's bytes; the rest refuse an entry the scorer would
-// refuse anyway (more than 4 screenshots or one over 256 KiB; more than
-// 993 files in app/ or 48 MiB of app files in all; a path under app/
-// longer than 1000 bytes).
-writeFileSync(
-  join(outputDir, 'dossier.json'),
-  buildDossier(outputDir, {
+function main(): void {
+  failFast();
+  rmSync(OUT, { recursive: true, force: true });
+  mkdirSync(OUT, { recursive: true });
+  cpSync('app', `${OUT}/app`, { recursive: true });
+  cpSync('screenshots', `${OUT}/screenshots`, { recursive: true });
+  const dossier = buildDossier(OUT, {
     text_max_bytes: 163840,
     screenshots: { max: 4, max_bytes: 262144 },
     app_max_files: 993,
     app_max_bytes: 50331648,
-    app_path_max_bytes: 1000,
-  }),
-);
+  });
+  writeFileSync(`${OUT}/dossier.json`, dossier);
+  console.log(`wrote ${OUT}/dossier.json (${dossier.length} bytes)`);
+}
+
+main();

@@ -2,57 +2,37 @@
 [![rank](https://make.fun/badge/gta6-cover-art-01/Wijaya-007/gta6-cover-art-01/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 [![reward](https://make.fun/badge/gta6-cover-art-01/Wijaya-007/gta6-cover-art-01/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 
-# NEON TIDE — five-crew GTA-style cover studio
+# VICE HEAT — Cover Studio
 
-A web app that turns a photo and a caption into a GTA 6-style poster:
-five panels, bold lettering and a neon sunset grade, exported as a PNG
-to share. Built for the [make.fun gta6-cover-art-01 bounty](https://make.fun/bounty/gta6-cover-art-01).
+Turn your own photos into a framed crime-epic key art cover: one hero
+close-up, six cast panels with name tags, a striped chrome title, a pink
+script subtitle, a tagline ribbon, a five-star press bar, a billing block,
+a barcode and a gold seal. Upload a photo into any panel, edit the title
+and captions, pick one of five colour grades (Sunset, Neon, Gold, Teal,
+Noir), and export the poster as a PNG in three sizes — Square 1:1
+(1080×1080), Portrait 4:5 (1080×1350) and Wide 16:9 (1920×1080).
 
-## The cover
-
-NEON TIDE is a five-crew poster. A tall hero panel in the centre shows
-**THE GETAWAY** (a woman in a beige blazer and sunglasses by a car), the
-four corner panels show **THE HACKER** (arcade), **THE BROKER** (marina
-dock), **THE ENFORCER** (motorcycle) and **THE FIXER** (neon street).
-Across the top: five stars, **PURE COASTAL ADRENALINE**, the title
-**NEON TIDE** and the script line **After Midnight**. Along the foot:
-**FIVE CREWS · ONE HARBOR · NO MERCY** and the ISSUE 04 seal.
-
-## How it works
-
-1. Pick a crew photo from the five samples, or upload your own photo
-   from your machine (photos stay on your machine — nothing is uploaded).
-2. Choose which panel it fills: The Getaway, The Hacker, The Broker,
-   The Enforcer or The Fixer.
-3. Edit the title, the script line and the tagline — the live preview
-   redraws with every change.
-4. Pick an export size (1080 × 1080, 1080 × 1350 or 1920 × 1080) and
-   hit **Export PNG**.
-
-## Try it
+## Run it
 
 ```sh
-node serve.ts
-# open http://localhost:8080
+node serve.ts --port 8081
+# open http://127.0.0.1:8081/
 ```
 
-## Files
+Offline static app: `app/index.html` + `app/src/*.js` + `app/style.css`,
+seven golden-hour sample photos under `app/samples/`, OFL fonts
+(Anton, Bebas Neue, Pacifico) under `app/fonts/`. No network, no upload.
 
-- `app/` — the static app (index.html, style.css, src/cover.js,
-  src/main.js, src/shots.js, five crew samples, three OFL fonts)
-- `screenshots/` — four screenshots of the app at work
-- `main.ts` — hands the app in: copies app/ + screenshots/ to /output
-  and writes /output/dossier.json
-- `serve.ts` — tiny static server for local testing
-- `shots.json` — the four screenshot presets
-- `vendor/makefun-app.ts` — the kit's dossier library, unchanged
+## Build the dossier
 
-## Fonts
+```sh
+node main.ts   # writes /output/dossier.json
+```
 
-Anton, Bebas Neue and Pacifico, all under the SIL Open Font License,
-shipped as WOFF2 files under `app/fonts/`. No Rockstar Games logo,
-artwork or font is used anywhere in this entry.
+## About
 
-## License
+Built for the [make.fun gta6-cover-art-01 bounty](https://make.fun/bounty/gta6-cover-art-01)
+— a $250 prize for the best GTA 6 cover art studio. All artwork in this
+repo is original; no Rockstar logo, artwork or font is used anywhere.
 
-MIT — see LICENSE.
+Referral: https://make.fun/r/9yzb6a2n

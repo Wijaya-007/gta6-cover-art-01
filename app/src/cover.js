@@ -1,155 +1,380 @@
-// NEON TIDE poster renderer: draws the five-crew GTA-style poster onto
-// a canvas. The layout is a tall hero panel in the middle (The Getaway),
-// the other four crews in the corners (Hacker and Broker on top, Enforcer
-// and Fixer below), the title, script line and five stars across the top,
-// and the tagline plus the ISSUE 04 seal at the foot. Each photo is drawn
-// cover-fit inside a gold frame; a panel with no photo yet gets a neon
-// gradient placeholder carrying the crew name.
+// VICE HEAT — poster renderer.
+// Draws the GTA-style multi-panel cover on a 2D canvas. Pure canvas, no
+// network, no fonts outside the app's own WOFF2 files. All layout is
+// computed from the canvas size so the same code renders 1:1, 4:5 and 16:9.
 
-export const CREWS = [
-  { key: 'hero', name: 'THE GETAWAY', sample: 'neon-hero.jpg' },
-  { key: 'hacker', name: 'THE HACKER', sample: 'neon-hacker.jpg' },
-  { key: 'broker', name: 'THE BROKER', sample: 'neon-broker.jpg' },
-  { key: 'enforcer', name: 'THE ENFORCER', sample: 'neon-enforcer.jpg' },
-  { key: 'fixer', name: 'THE FIXER', sample: 'neon-fixer.jpg' },
+export const GRADES = [
+  { id: 'sunset', name: 'Sunset', tint: '#ff7a18', alpha: 0.16, warm: 0.22 },
+  { id: 'neon', name: 'Neon', tint: '#ff2e88', alpha: 0.18, warm: 0.08 },
+  { id: 'gold', name: 'Gold', tint: '#ffb400', alpha: 0.2, warm: 0.3 },
+  { id: 'teal', name: 'Teal', tint: '#00c2a8', alpha: 0.16, warm: 0.0 },
+  { id: 'noir', name: 'Noir', tint: '#5a5a6e', alpha: 0.28, warm: 0.0 },
+];
+
+// The seven panels of a VICE HEAT cover. `tag` is the name chip drawn on
+// the panel; `photo` is the key into the images map; `focus` is the
+// face-aware anchor (0..1) used by the cover-fit crop.
+export const PANELS = [
+  { key: 'hero', tag: 'THE DRIVER', focus: [0.5, 0.32] },
+  { key: 'insider', tag: 'THE INSIDER', focus: [0.5, 0.3] },
+  { key: 'boss', tag: 'THE BOSS', focus: [0.5, 0.32] },
+  { key: 'rider', tag: 'THE RIDER', focus: [0.5, 0.3] },
+  { key: 'courier', tag: 'THE COURIER', focus: [0.5, 0.3] },
+  { key: 'fixer', tag: 'THE FIXER', focus: [0.5, 0.3] },
+  { key: 'lookout', tag: 'THE LOOKOUT', focus: [0.5, 0.3] },
 ];
 
 export const DEFAULT_STATE = {
-  title: 'NEON TIDE',
-  script: 'After Midnight',
-  tagline: 'FIVE CREWS · ONE HARBOR · NO MERCY',
-  photos: { hero: null, hacker: null, broker: null, enforcer: null, fixer: null },
+  title: 'VICE HEAT',
+  subtitle: 'one last ride',
+  tagline: 'FIVE FRIENDS · ONE COAST · NO WAY BACK',
+  quote: 'PURE GOLDEN-HOUR MAYHEM',
+  vol: 'VOL. 1',
+  grade: 'sunset',
+  seed: 77,
 };
 
-const GOLD = '#ffc93c';
-const MAGENTA = '#ff2e88';
-const CYAN = '#19e3ff';
+// --- small canvas helpers -------------------------------------------------
 
-// Draw an image so it fills the box, cropping the overflow (cover fit).
-function coverFit(ctx, img, x, y, w, h) {
-  const scale = Math.max(w / img.width, h / img.height);
-  const dw = img.width * scale;
-  const dh = img.height * scale;
-  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+function rr(ctx, x, y, w, h, r) {
+  const rad = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rad, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rad);
+  ctx.arcTo(x + w, y + h, x, y + h, rad);
+  ctx.arcTo(x, y + h, x, y, rad);
+  ctx.arcTo(x, y, x + w, y, rad);
+  ctx.closePath();
 }
 
-// One framed panel: the photo (or a gradient placeholder), a neon wash
-// so every photo shares the same sunset grade, a gold frame, and a
-// callout chip with the crew name along the bottom.
-function drawPanel(ctx, box, img, label, W) {
-  const { x, y, w, h } = box;
+function star(ctx, cx, cy, rOuter, rInner, points = 5) {
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? rOuter : rInner;
+    const a = (Math.PI * i) / points - Math.PI / 2;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+// Cover-fit draw with a focus point: keeps the face in frame when the
+// panel aspect differs from the photo aspect.
+export function drawCoverFit(ctx, img, x, y, w, h, fx = 0.5, fy = 0.35) {
+  if (!img || !img.naturalWidth) return;
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  const scale = Math.max(w / iw, h / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  const ox = x + (w - dw) * fx;
+  const oy = y + (h - dh) * fy;
   ctx.save();
   ctx.beginPath();
   ctx.rect(x, y, w, h);
   ctx.clip();
-  if (img) {
-    coverFit(ctx, img, x, y, w, h);
-  } else {
-    const g = ctx.createLinearGradient(x, y, x + w, y + h);
-    g.addColorStop(0, '#3b115e');
-    g.addColorStop(1, '#12082a');
-    ctx.fillStyle = g;
-    ctx.fillRect(x, y, w, h);
-  }
-  const wash = ctx.createLinearGradient(x, y, x, y + h);
-  wash.addColorStop(0, 'rgba(255,46,136,0.12)');
-  wash.addColorStop(1, 'rgba(25,227,255,0.10)');
-  ctx.fillStyle = wash;
-  ctx.fillRect(x, y, w, h);
+  ctx.drawImage(img, ox, oy, dw, dh);
   ctx.restore();
+}
 
-  ctx.strokeStyle = GOLD;
-  ctx.lineWidth = Math.max(2, W * 0.003);
-  ctx.strokeRect(x, y, w, h);
+// A deterministic pseudo-random stream from a seed, for the barcode.
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
-  // Callout chip with the crew name, shrunk to fit the panel width so a
-  // long name (THE GETAWAY on the narrow hero panel) never overflows.
-  const chipH = Math.max(22, h * 0.13);
-  ctx.fillStyle = GOLD;
-  ctx.fillRect(x, y + h - chipH, w, chipH);
-  ctx.fillStyle = '#160b2e';
-  let chipFont = Math.round(chipH * 0.62);
-  ctx.font = `${chipFont}px 'Bebas Neue', sans-serif`;
-  const maxLabelW = w - 8;
-  while (chipFont > 10 && ctx.measureText(label).width > maxLabelW) {
-    chipFont -= 1;
-    ctx.font = `${chipFont}px 'Bebas Neue', sans-serif`;
+function fitFont(ctx, text, fontFamily, maxWidth, startPx, weight = '') {
+  let px = startPx;
+  while (px > 8) {
+    ctx.font = `${weight} ${px}px ${fontFamily}`;
+    if (ctx.measureText(text).width <= maxWidth) return px;
+    px -= 1;
   }
+  return px;
+}
+
+// --- the poster -----------------------------------------------------------
+
+// Draws the whole VICE HEAT cover. `images` maps panel keys to HTMLImage
+// elements (or canvases). `opts` overrides DEFAULT_STATE. The canvas is
+// assumed to already be sized to the export size.
+export function drawCover(ctx, W, H, images, opts = {}) {
+  const s = { ...DEFAULT_STATE, ...opts };
+  const grade = GRADES.find((g) => g.id === s.grade) || GRADES[0];
+  const u = W / 1080; // unit: 1 at 1080 wide
+
+  // Backdrop: deep purple night + gold frame.
+  ctx.fillStyle = '#160a2e';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#f5c542';
+  ctx.lineWidth = Math.max(2, 6 * u);
+  ctx.strokeRect(10 * u, 10 * u, W - 20 * u, H - 20 * u);
+  ctx.strokeStyle = 'rgba(245,197,66,0.35)';
+  ctx.lineWidth = Math.max(1, 2 * u);
+  ctx.strokeRect(20 * u, 20 * u, W - 40 * u, H - 40 * u);
+
+  // ---- top bar: stars + press quote + VOL box
+  const barY = 34 * u;
+  const starR = 13 * u;
+  ctx.fillStyle = '#f5c542';
+  for (let i = 0; i < 5; i++) {
+    star(ctx, 52 * u + i * (starR * 2 + 6 * u), barY, starR, starR * 0.45);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#ffe9a8';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(label, x + w / 2, y + h - chipH / 2 + 1);
-}
+  const quotePx = fitFont(ctx, `"${s.quote}"`, "'Bebas Neue', sans-serif", W * 0.52, 30 * u);
+  ctx.font = `${quotePx}px 'Bebas Neue', sans-serif`;
+  ctx.fillText(`"${s.quote}"`, W / 2, barY);
+  // VOL box
+  ctx.fillStyle = '#f5c542';
+  const volW = 92 * u;
+  const volH = 34 * u;
+  rr(ctx, W - 34 * u - volW, barY - volH / 2, volW, volH, 3 * u);
+  ctx.fill();
+  ctx.fillStyle = '#160a2e';
+  ctx.font = `bold ${20 * u}px 'Anton', sans-serif`;
+  ctx.fillText(s.vol, W - 34 * u - volW / 2, barY + 1 * u);
 
-// Load the three poster fonts so the canvas can use them; if they fail,
-// the poster still draws with system fonts.
-export async function ensureFonts() {
-  try {
-    await Promise.all([
-      document.fonts.load('700 40px Anton'),
-      document.fonts.load('400 40px Pacifico'),
-      document.fonts.load('400 40px "Bebas Neue"'),
-    ]);
-  } catch (_) {
-    // Fall back to system fonts; the poster still draws.
-  }
-}
-
-export function drawCover(canvas, state) {
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width;
-  const H = canvas.height;
-  const u = W / 1080; // scale unit: the same layout works at any export size
-
-  // Sunset background, deep purple fading down to near-black.
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#2a0a4d');
-  bg.addColorStop(0.45, '#12082a');
-  bg.addColorStop(1, '#0b0618');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
-
-  // Header: five stars, title, script line.
-  const headerH = H * 0.15;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = GOLD;
-  ctx.font = `${Math.round(22 * u)}px 'Bebas Neue', sans-serif`;
-  ctx.fillText('★★★★★  PURE COASTAL ADRENALINE', W / 2, headerH * 0.16);
-  ctx.fillStyle = MAGENTA;
-  ctx.font = `${Math.round(64 * u)}px Anton, sans-serif`;
-  ctx.shadowColor = 'rgba(255,46,136,0.8)';
-  ctx.shadowBlur = 18 * u;
-  ctx.fillText(state.title.toUpperCase(), W / 2, headerH * 0.52);
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = CYAN;
-  ctx.font = `${Math.round(30 * u)}px Pacifico, cursive`;
-  ctx.fillText(state.script, W / 2, headerH * 0.88);
-
-  // Panel grid: hero tall in the centre, four crews at the corners.
-  const top = H * 0.17;
-  const bottom = H * 0.88;
+  // ---- main grid: CLASSIC COLLAGE (per Yans's reference: a tight grid
+  // of panels with the big title in the centre overlapping them — the
+  // structure only, all content is our own original VICE HEAT material).
+  // Top row: four equal panels. Bottom row: three equal panels. No panel
+  // dominates; the title sits in the middle overlapping the row boundary.
+  const gridX = 30 * u;
+  const gridW = W - 60 * u;
+  const gridY = 66 * u;
+  const gridH = H * 0.8;
   const gap = 10 * u;
-  const sideW = W * 0.30;
-  const midX0 = W * 0.35;
-  const midX1 = W * 0.65;
-  const midH = (bottom - top - gap) / 2;
-  const boxes = {
-    hero: { x: midX0, y: top, w: midX1 - midX0, h: bottom - top },
-    hacker: { x: W * 0.02, y: top, w: sideW, h: midH },
-    broker: { x: W * 0.68, y: top, w: sideW, h: midH },
-    enforcer: { x: W * 0.02, y: top + midH + gap, w: sideW, h: midH },
-    fixer: { x: W * 0.68, y: top + midH + gap, w: sideW, h: midH },
+  const topH = gridH * 0.52;
+  const botH = gridH - topH - gap;
+  const topW = (gridW - gap * 3) / 4;
+  const botW = (gridW - gap * 2) / 3;
+
+  const panels = {
+    insider: { x: gridX, y: gridY, w: topW, h: topH },
+    hero: { x: gridX + topW + gap, y: gridY, w: topW, h: topH },
+    fixer: { x: gridX + (topW + gap) * 2, y: gridY, w: topW, h: topH },
+    rider: { x: gridX + (topW + gap) * 3, y: gridY, w: topW, h: topH },
+    boss: { x: gridX, y: gridY + topH + gap, w: botW, h: botH },
+    courier: { x: gridX + botW + gap, y: gridY + topH + gap, w: botW, h: botH },
+    lookout: { x: gridX + (botW + gap) * 2, y: gridY + topH + gap, w: botW, h: botH },
   };
-  for (const crew of CREWS) {
-    drawPanel(ctx, boxes[crew.key], state.photos[crew.key], crew.name, W);
+
+  // Draw each photo panel with a thin gold inner border.
+  const photoKeys = ['insider', 'hero', 'fixer', 'rider', 'boss', 'courier', 'lookout'];
+  for (const key of photoKeys) {
+    const p = panels[key];
+    const def = PANELS.find((d) => d.key === key);
+    const img = images[key];
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(p.x, p.y, p.w, p.h);
+    ctx.clip();
+    if (img) drawCoverFit(ctx, img, p.x, p.y, p.w, p.h, def.focus[0], def.focus[1]);
+    else {
+      ctx.fillStyle = '#2a1548';
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+    }
+    // grade wash over the photo
+    ctx.globalCompositeOperation = 'soft-light';
+    ctx.fillStyle = grade.tint;
+    ctx.globalAlpha = grade.alpha + 0.25;
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    ctx.strokeStyle = '#f5c542';
+    ctx.lineWidth = Math.max(1, 2.5 * u);
+    ctx.strokeRect(p.x, p.y, p.w, p.h);
+    // name tag chip: top-row panels wear it on top, bottom-row panels on
+    // the bottom (the big title overlaps the boundary between the rows).
+    const tag = def.tag;
+    ctx.font = `${Math.max(11, 19 * u)}px 'Bebas Neue', sans-serif`;
+    const tw = ctx.measureText(tag).width + 18 * u;
+    const th = 26 * u;
+    const isBottomRow = p.y > gridY + topH;
+    const tagY = isBottomRow ? p.y + p.h - th - 8 * u : p.y + 8 * u;
+    ctx.fillStyle = 'rgba(10,5,20,0.92)';
+    rr(ctx, p.x + 8 * u, tagY, tw, th, 2 * u);
+    ctx.fill();
+    ctx.fillStyle = '#f5c542';
+    ctx.fillRect(p.x + 8 * u, tagY, 5 * u, th);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tag, p.x + 18 * u, tagY + th / 2 + 1 * u);
   }
 
-  // Footer: tagline centred, ISSUE 04 seal at the right.
-  ctx.fillStyle = '#f5efff';
-  ctx.font = `${Math.round(24 * u)}px 'Bebas Neue', sans-serif`;
-  ctx.fillText(state.tagline.toUpperCase(), W / 2, H * 0.945);
-  ctx.fillStyle = GOLD;
-  ctx.font = `${Math.round(20 * u)}px Anton, sans-serif`;
-  ctx.textAlign = 'right';
-  ctx.fillText('ISSUE 04', W * 0.98, H * 0.945);
+  // ---- big striped title overlapping the hero's lower edge
+  const titleY = gridY + topH + 6 * u;
+  const titlePx = fitFont(ctx, s.title, "'Anton', sans-serif", gridW * 0.94, 150 * u);
   ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${titlePx}px 'Anton', sans-serif`;
+  // Chrome gradient fill: pink -> orange -> gold.
+  const tg = ctx.createLinearGradient(0, titleY - titlePx * 0.55, 0, titleY + titlePx * 0.55);
+  tg.addColorStop(0, '#ffe259');
+  tg.addColorStop(0.35, '#ff7e5f');
+  tg.addColorStop(0.65, '#ff2e88');
+  tg.addColorStop(1, '#c86bff');
+  ctx.lineWidth = Math.max(2, 7 * u);
+  ctx.strokeStyle = '#2a0a3e';
+  ctx.strokeText(s.title, W / 2, titleY);
+  ctx.fillStyle = tg;
+  ctx.fillText(s.title, W / 2, titleY);
+  // Horizontal stripes confined INSIDE the title letters only. The old
+  // code drew them with 'source-atop' on the main canvas, but the canvas
+  // is opaque everywhere (backdrop + photos), so the stripes leaked
+  // across the whole poster. Fix: draw the stripe bands on a transparent
+  // offscreen canvas, then punch them to the glyph shapes with
+  // 'destination-in' (keeps destination pixels only where the text is
+  // opaque), and composite the result over the gradient title. The
+  // offscreen never carries the glyph fill itself, so the gradient stays.
+  const stripe = document.createElement('canvas');
+  stripe.width = W;
+  stripe.height = H;
+  const sctx = stripe.getContext('2d');
+  sctx.fillStyle = 'rgba(255,255,255,0.28)';
+  for (let yy = titleY - titlePx * 0.5; yy < titleY + titlePx * 0.5; yy += titlePx * 0.22) {
+    sctx.fillRect(0, yy, W, titlePx * 0.07);
+  }
+  sctx.globalCompositeOperation = 'destination-in';
+  sctx.textAlign = 'center';
+  sctx.textBaseline = 'middle';
+  sctx.font = `${titlePx}px 'Anton', sans-serif`;
+  sctx.fillStyle = '#ffffff';
+  sctx.fillText(s.title, W / 2, titleY);
+  ctx.drawImage(stripe, 0, 0);
+
+  // ---- pink script subtitle
+  const subY = titleY + titlePx * 0.62;
+  const subPx = fitFont(ctx, s.subtitle, "'Pacifico', cursive", gridW * 0.6, 58 * u);
+  ctx.font = `${subPx}px 'Pacifico', cursive`;
+  ctx.fillStyle = '#ff8fd1';
+  ctx.shadowColor = '#ff2e88';
+  ctx.shadowBlur = 18 * u;
+  ctx.fillText(s.subtitle, W / 2, subY);
+  ctx.shadowBlur = 0;
+
+  // ---- tagline ribbon
+  const ribY = subY + subPx * 0.75;
+  const ribH = 34 * u;
+  ctx.font = `${Math.max(12, 21 * u)}px 'Bebas Neue', sans-serif`;
+  const ribTextW = ctx.measureText(s.tagline).width + 44 * u;
+  const ribX = (W - ribTextW) / 2;
+  ctx.fillStyle = '#ff2e88';
+  ctx.beginPath();
+  ctx.moveTo(ribX - 14 * u, ribY - ribH / 2);
+  ctx.lineTo(ribX + ribTextW + 14 * u, ribY - ribH / 2);
+  ctx.lineTo(ribX + ribTextW, ribY + ribH / 2);
+  ctx.lineTo(ribX, ribY + ribH / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(s.tagline, W / 2, ribY + 1 * u);
+
+  // ---- bottom bar: COMING SOON + billing + barcode + gold seal
+  const botY = gridY + gridH + 26 * u;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff5fa2';
+  const csPx = fitFont(ctx, 'COMING SOON', "'Anton', sans-serif", gridW * 0.3, 34 * u);
+  ctx.font = `${csPx}px 'Anton', sans-serif`;
+  ctx.fillText('COMING SOON', gridX, botY + 10 * u);
+  ctx.fillStyle = '#e8dcc8';
+  ctx.textAlign = 'center';
+  ctx.font = `${Math.max(9, 13.5 * u)}px 'Bebas Neue', sans-serif`;
+  ctx.fillText('A SUNSET PICTURES PRODUCTION · STARRING YOU', W / 2, botY + 2 * u);
+  ctx.fillText('SHOT ON YOUR OWN CAMERA · GRADED BY HAND', W / 2, botY + 20 * u);
+  // Barcode: deterministic bars from the seed. It sits LEFT of the gold
+  // seal with a clear gap — the old position overlapped the seal, which
+  // covered the barcode's right end.
+  const rng = mulberry32(s.seed);
+  const bcX = W - gridX - 250 * u;
+  const bcW = 110 * u;
+  const bcH = 34 * u;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(bcX - 6 * u, botY - 8 * u, bcW + 12 * u, bcH + 16 * u);
+  ctx.fillStyle = '#111111';
+  let bx = bcX;
+  while (bx < bcX + bcW) {
+    const bw = (1 + Math.floor(rng() * 4)) * u;
+    if (rng() > 0.45) ctx.fillRect(bx, botY - 4 * u, bw, bcH);
+    bx += bw + (1 + Math.floor(rng() * 3)) * u;
+  }
+  ctx.fillStyle = '#111111';
+  ctx.font = `${Math.max(8, 11 * u)}px 'Bebas Neue', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('0 10472 85991 8', bcX + bcW / 2, botY + bcH + 4 * u);
+  // Gold seal: starburst circle, bottom-right corner. Kept clear of the
+  // barcode (which now sits 250u from the right edge): the seal spans
+  // roughly W-122u..W-26u, the barcode ends at W-250u+110u = W-140u.
+  const sealCx = W - 74 * u;
+  const sealCy = H - 74 * u;
+  const sealR = 48 * u;
+  ctx.save();
+  ctx.translate(sealCx, sealCy);
+  ctx.beginPath();
+  for (let i = 0; i < 24; i++) {
+    const a = (Math.PI * 2 * i) / 24;
+    const r = i % 2 === 0 ? sealR : sealR * 0.86;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#f5c542';
+  ctx.fill();
+  ctx.strokeStyle = '#8a6d1f';
+  ctx.lineWidth = 2 * u;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, 0, sealR * 0.68, 0, Math.PI * 2);
+  ctx.strokeStyle = '#8a6d1f';
+  ctx.stroke();
+  ctx.fillStyle = '#3a2a00';
+  ctx.textAlign = 'center';
+  ctx.font = `bold ${Math.max(9, 13 * u)}px 'Anton', sans-serif`;
+  ctx.fillText('ORIGINAL', 0, -8 * u);
+  ctx.fillText('COVER ART', 0, 8 * u);
+  star(ctx, 0, 20 * u, 7 * u, 3 * u);
+  ctx.fillStyle = '#3a2a00';
+  ctx.fill();
+  ctx.restore();
+
+  // ---- warm vignette for the golden-hour grade
+  const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75);
+  vg.addColorStop(0, 'rgba(255,150,50,0)');
+  vg.addColorStop(1, `rgba(255,110,20,${grade.warm * 0.5})`);
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
 }
+
+// --- export sizes ---------------------------------------------------------
+
+export const EXPORT_SIZES = [
+  { id: 'square', label: 'Square 1:1', w: 1080, h: 1080 },
+  { id: 'portrait', label: 'Portrait 4:5', w: 1080, h: 1350 },
+  { id: 'wide', label: 'Wide 16:9', w: 1920, h: 1080 },
+];
+
+// Renders the cover to an offscreen canvas at the requested size.
+export function renderCoverCanvas(images, opts, size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size.w;
+  canvas.height = size.h;
+  const ctx = canvas.getContext('2d');
+  drawCover(ctx, size.w, size.h, images, opts);
+  return canvas;
+}
+

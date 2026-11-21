@@ -1,155 +1,319 @@
-// NEON TIDE editor: wires the page controls to the poster renderer.
-// Photos come from the user's own machine (file input) or from the five
-// crew samples shipped with the app; nothing is uploaded anywhere.
-// Export renders the poster at the chosen size and downloads it as a PNG.
+// VICE HEAT — cover studio editor.
+// Upload your own photos (or keep the seven golden-hour samples), edit the
+// title, tagline and captions, pick one of five colour grades, then export
+// the poster as a PNG in three sizes. Everything runs offline in the page.
 
-import { CREWS, DEFAULT_STATE, drawCover, ensureFonts } from './cover.js';
-import { markReady } from './shots.js';
+import { drawCover, GRADES, PANELS, DEFAULT_STATE, EXPORT_SIZES } from './cover.js';
 
-const canvas = document.getElementById('poster');
-const state = {
-  title: DEFAULT_STATE.title,
-  script: DEFAULT_STATE.script,
-  tagline: DEFAULT_STATE.tagline,
-  photos: { ...DEFAULT_STATE.photos },
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => [...document.querySelectorAll(sel)];
+
+const SAMPLE_SRC = {
+  hero: 'samples/hero.jpg',
+  insider: 'samples/insider.jpg',
+  boss: 'samples/boss.jpg',
+  rider: 'samples/rider.jpg',
+  courier: 'samples/courier.jpg',
+  fixer: 'samples/fixer.jpg',
+  lookout: 'samples/lookout.jpg',
 };
 
-let activePanel = 'hero';
-let exportSize = '1080x1080';
+const LS_KEY = 'vice-heat-studio-v6';
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = () => reject(new Error(`cannot load ${src}`));
     img.src = src;
   });
 }
 
-async function redraw() {
-  await ensureFonts();
-  drawCover(canvas, state);
-}
-
-function putPhoto(img) {
-  state.photos[activePanel] = img;
-  redraw();
-}
-
-async function loadSample(name) {
+function readState() {
   try {
-    const img = await loadImage(`./samples/${name}`);
-    putPhoto(img);
-  } catch (_) {
-    // A missing sample leaves the panel on its gradient placeholder.
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    return parsed;
+  } catch {
+    return null;
   }
 }
 
-// Crew sample strip: one thumbnail per crew; clicking one fills the
-// currently selected panel with that crew's photo.
-const samplesEl = document.getElementById('samples');
-for (const crew of CREWS) {
-  const img = document.createElement('img');
-  img.src = `./samples/${crew.sample}`;
-  img.alt = crew.name;
-  img.title = crew.name;
-  img.addEventListener('click', () => loadSample(crew.sample));
-  samplesEl.appendChild(img);
-}
-
-// Panel selector: which panel the next photo (upload or sample) fills.
-document.getElementById('panels').addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-panel]');
-  if (!btn) return;
-  document.querySelectorAll('.panel-btn').forEach((b) => b.classList.remove('active'));
-  btn.classList.add('active');
-  activePanel = btn.dataset.panel;
-});
-
-// Photo upload from the user's own machine.
-document.getElementById('photoFile').addEventListener('change', (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      const img = await loadImage(reader.result);
-      putPhoto(img);
-    } catch (_) {}
+function defaultState() {
+  const focus = {};
+  for (const p of PANELS) focus[p.key] = [...p.focus];
+  return {
+    ...DEFAULT_STATE,
+    sizeId: 'portrait',
+    grade: 'sunset',
+    focus,
+    uploads: {},
+    captions: {},
   };
-  reader.readAsDataURL(file);
-});
+}
 
-// Caption inputs: title, script line and tagline, live-redrawing.
-document.getElementById('titleInput').addEventListener('input', (e) => {
-  state.title = e.target.value || 'NEON TIDE';
-  redraw();
-});
-document.getElementById('scriptInput').addEventListener('input', (e) => {
-  state.script = e.target.value || 'After Midnight';
-  redraw();
-});
-document.getElementById('taglineInput').addEventListener('input', (e) => {
-  state.tagline = e.target.value || 'FIVE CREWS · ONE HARBOR · NO MERCY';
-  redraw();
-});
+let state = { ...defaultState(), ...(readState() || {}) };
+if (!state.focus) state.focus = defaultState().focus;
+if (!state.uploads) state.uploads = {};
+if (!state.captions) state.captions = {};
 
-// Export size picker.
-document.getElementById('sizes').addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-size]');
-  if (!btn) return;
-  document.querySelectorAll('.size-btn').forEach((b) => b.classList.remove('active'));
-  btn.classList.add('active');
-  exportSize = btn.dataset.size;
-});
-
-// Export: render the poster at the chosen size and download a PNG.
-document.getElementById('exportBtn').addEventListener('click', async () => {
-  const [w, h] = exportSize.split('x').map(Number);
-  const off = document.createElement('canvas');
-  off.width = w;
-  off.height = h;
-  await ensureFonts();
-  drawCover(off, state);
-  off.toBlob((blob) => {
-    if (!blob) return;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `neon-tide-${exportSize}.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-  }, 'image/png');
-});
-
-// Screenshot mode (?shot=cover|editor&photo=<sample>&caption=<text>):
-// load one sample into the hero panel and set the title, so the shot
-// script captures the app in a known state.
-async function applyShotParams() {
-  const q = new URLSearchParams(location.search);
-  const photo = q.get('photo');
-  const caption = q.get('caption');
-  if (caption) {
-    state.title = caption;
-    const t = document.getElementById('titleInput');
-    if (t) t.value = caption;
-  }
-  if (photo) {
-    try {
-      const img = await loadImage(`./samples/${photo}.jpg`);
-      state.photos.hero = img;
-    } catch (_) {}
+function saveState() {
+  try {
+    const copy = { ...state };
+    delete copy.uploads; // data URLs are heavy; samples reload instead
+    localStorage.setItem(LS_KEY, JSON.stringify(copy));
+  } catch {
+    // storage full or unavailable: the editor still works in-memory
   }
 }
 
-// Boot: preload the five crew samples into their panels, apply any shot
-// parameters, draw the poster, then signal the shot script it is ready.
-(async () => {
-  for (const crew of CREWS) {
+// The live image set: uploaded photos win, samples are the fallback.
+const images = {};
+const uploadUrls = {};
+
+async function loadAllImages() {
+  for (const key of Object.keys(SAMPLE_SRC)) {
     try {
-      state.photos[crew.key] = await loadImage(`./samples/${crew.sample}`);
-    } catch (_) {}
+      images[key] = await loadImage(SAMPLE_SRC[key]);
+    } catch {
+      images[key] = null;
+    }
   }
-  await applyShotParams();
-  await redraw();
-  markReady();
-})();
+}
+
+function currentImages() {
+  const out = {};
+  for (const key of Object.keys(images)) out[key] = images[key];
+  return out;
+}
+
+function renderPreview() {
+  const canvas = $('#poster');
+  if (!canvas) return;
+  const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES[1];
+  canvas.width = size.w;
+  canvas.height = size.h;
+  const ctx = canvas.getContext('2d');
+  drawCover(ctx, size.w, size.h, currentImages(), {
+    title: state.title,
+    subtitle: state.subtitle,
+    tagline: state.tagline,
+    quote: state.quote,
+    vol: state.vol,
+    grade: state.grade,
+    seed: state.seed,
+  });
+  const label = $('#size-label');
+  if (label) label.textContent = `${size.label} · ${size.w}×${size.h}`;
+}
+
+// --- editor UI ------------------------------------------------------------
+
+function buildPanelCards() {
+  const wrap = $('#panels');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const p of PANELS) {
+    const card = document.createElement('div');
+    card.className = 'panel-card';
+    card.innerHTML = `
+      <div class="panel-thumb"><img alt="${p.tag}"></div>
+      <div class="panel-name">${p.tag}</div>
+      <label class="panel-upload">Upload photo
+        <input type="file" accept="image/*" data-panel="${p.key}" hidden>
+      </label>
+      <label class="panel-focus">Face position
+        <input type="range" min="0" max="100" value="${Math.round((state.focus[p.key]?.[1] ?? 0.35) * 100)}" data-focus="${p.key}">
+      </label>`;
+    wrap.appendChild(card);
+  }
+  // thumbnails mirror the current images
+  for (const p of PANELS) {
+    const img = wrap.querySelector(`img[alt="${p.tag}"]`);
+    if (img && images[p.key]) img.src = images[p.key].src;
+  }
+  wrap.querySelectorAll('input[type="file"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        loadImage(reader.result)
+          .then((img) => {
+            images[input.dataset.panel] = img;
+            uploadUrls[input.dataset.panel] = reader.result;
+            buildPanelCards();
+            renderPreview();
+          })
+          .catch(() => alert('That file could not be read as an image.'));
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+  wrap.querySelectorAll('input[data-focus]').forEach((input) => {
+    input.addEventListener('input', () => {
+      const key = input.dataset.focus;
+      const fy = Number(input.value) / 100;
+      state.focus[key] = [0.5, fy];
+      saveState();
+      renderPreview();
+    });
+  });
+}
+
+function buildGradeButtons() {
+  const wrap = $('#grades');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const g of GRADES) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'grade-btn' + (state.grade === g.id ? ' active' : '');
+    btn.dataset.grade = g.id;
+    btn.style.setProperty('--grade-tint', g.tint);
+    btn.textContent = g.name;
+    btn.addEventListener('click', () => {
+      state.grade = g.id;
+      saveState();
+      buildGradeButtons();
+      renderPreview();
+    });
+    wrap.appendChild(btn);
+  }
+}
+
+function buildSizeButtons() {
+  const wrap = $('#sizes');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const s of EXPORT_SIZES) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'size-btn' + (state.sizeId === s.id ? ' active' : '');
+    btn.dataset.size = s.id;
+    btn.textContent = `${s.label} · ${s.w}×${s.h}`;
+    btn.addEventListener('click', () => {
+      state.sizeId = s.id;
+      saveState();
+      buildSizeButtons();
+      renderPreview();
+    });
+    wrap.appendChild(btn);
+  }
+}
+
+function bindTextInputs() {
+  const fields = [
+    ['#title-input', 'title'],
+    ['#subtitle-input', 'subtitle'],
+    ['#tagline-input', 'tagline'],
+    ['#quote-input', 'quote'],
+  ];
+  for (const [sel, key] of fields) {
+    const el = $(sel);
+    if (!el) continue;
+    el.value = state[key] ?? '';
+    el.addEventListener('input', () => {
+      state[key] = el.value;
+      saveState();
+      renderPreview();
+    });
+  }
+}
+
+// --- export ---------------------------------------------------------------
+
+function exportPng(size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size.w;
+  canvas.height = size.h;
+  const ctx = canvas.getContext('2d');
+  drawCover(ctx, size.w, size.h, currentImages(), {
+    title: state.title,
+    subtitle: state.subtitle,
+    tagline: state.tagline,
+    quote: state.quote,
+    vol: state.vol,
+    grade: state.grade,
+    seed: state.seed,
+  });
+  const a = document.createElement('a');
+  a.download = `vice-heat-${size.id}-${size.w}x${size.h}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+function bindExport() {
+  const one = $('#export-one');
+  if (one) {
+    one.addEventListener('click', () => {
+      const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES[1];
+      exportPng(size);
+    });
+  }
+  const all = $('#export-all');
+  if (all) {
+    all.addEventListener('click', () => {
+      // One file per click is the browser-safe path; stagger the three.
+      EXPORT_SIZES.forEach((size, i) => {
+        setTimeout(() => exportPng(size), i * 450);
+      });
+    });
+  }
+  const reset = $('#reset-all');
+  if (reset) {
+    reset.addEventListener('click', () => {
+      localStorage.removeItem(LS_KEY);
+      state = defaultState();
+      loadAllImages().then(() => {
+        buildPanelCards();
+        buildGradeButtons();
+        buildSizeButtons();
+        bindTextInputs();
+        renderPreview();
+      });
+    });
+  }
+}
+
+// --- shot mode (for scripted screenshots) ---------------------------------
+// ?shot=cover renders the poster alone at the shot's size, no editor chrome.
+// The screenshot runner loads the page with this param and captures #poster.
+
+export function shotFromQuery() {
+  const params = new URLSearchParams(location.search);
+  const shot = params.get('shot');
+  if (!shot) return null;
+  const map = {
+    '1-cover': { sizeId: 'square', grade: 'sunset' },
+    '2-editor': null, // full editor, captured as-is
+    '3-cover-portrait': { sizeId: 'portrait', grade: 'gold' },
+    '4-cover-square': { sizeId: 'square', grade: 'neon' },
+  };
+  return { name: shot, ...(map[shot] || { sizeId: 'portrait', grade: 'sunset' }) };
+}
+
+async function boot() {
+  await loadAllImages();
+  buildPanelCards();
+  buildGradeButtons();
+  buildSizeButtons();
+  bindTextInputs();
+  bindExport();
+  const shot = shotFromQuery();
+  if (shot) {
+    // Shot mode hides the editor chrome so the poster fills the frame —
+    // but NOT for the 2-editor shot, which must show the full editor UI.
+    if (shot.name !== '2-editor') {
+      document.body.classList.add('shot-mode');
+      state.sizeId = shot.sizeId;
+      state.grade = shot.grade;
+    }
+  }
+  renderPreview();
+  document.body.classList.add('ready');
+}
+
+boot();
