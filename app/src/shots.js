@@ -1,4 +1,4 @@
-// VICE HEAT — screenshot definitions.
+// VICE HEAT — screenshot definitions (rebuild #8).
 // The four dossier screenshots: the cover first, then the editor, then the
 // two alternate export sizes. The Playwright runner loads index.html with
 // ?shot=<name> and captures the #poster canvas (or the whole editor for
@@ -12,7 +12,7 @@ export const SHOTS = [
     width: 1080,
     height: 1080,
     query: 'shot=1-cover',
-    caption: 'The VICE HEAT cover: dominant hero panel with three cast panels on each side, striped title crossing the hero.',
+    caption: 'The VICE HEAT cover: classic collage grid mixing four portraits with police, helicopter and airplane action scenes.',
   },
   {
     name: '2-editor',
@@ -28,7 +28,7 @@ export const SHOTS = [
     width: 1024,
     height: 1280,
     query: 'shot=3-cover-portrait',
-    caption: 'Portrait 4:5 export with the Gold grade: large hero above the 3x2 cast grid.',
+    caption: 'Portrait 4:5 export with the Gold grade.',
   },
   {
     name: '4-cover-square',

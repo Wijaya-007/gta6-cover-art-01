@@ -1,10 +1,9 @@
-// VICE HEAT — cover studio editor.
+// VICE HEAT — cover studio editor (rebuild #8).
 // Upload your own photos (or keep the seven golden-hour samples), edit the
 // title, tagline and captions, pick one of five colour grades, then export
 // the poster as a PNG in three sizes. Everything runs offline in the page.
-// The poster is one dominant hero panel (THE DRIVER) with three supporting
-// panels on each side in landscape, or a large hero above a 3x2 cast grid
-// in square and portrait — the oversized title crosses the hero image.
+// Samples mix four character portraits with three action scenes (police,
+// helicopter, airplane).
 
 import { drawCover, GRADES, PANELS, DEFAULT_STATE, EXPORT_SIZES } from './cover.js';
 
@@ -21,7 +20,7 @@ const SAMPLE_SRC = {
   lookout: 'samples/lookout.jpg',
 };
 
-const LS_KEY = 'vice-heat-studio-v7';
+const LS_KEY = 'vice-heat-studio-v8';
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -296,10 +295,6 @@ export function shotFromQuery() {
 
 async function boot() {
   await loadAllImages();
-  // The poster text is drawn on canvas with the app's own fonts; wait for
-  // them so the first render (and any screenshot) uses Anton/Bebas/Pacifico,
-  // not a fallback face.
-  try { await document.fonts.ready; } catch { /* fonts are optional */ }
   buildPanelCards();
   buildGradeButtons();
   buildSizeButtons();
@@ -315,9 +310,12 @@ async function boot() {
       state.grade = shot.grade;
     }
   }
+  // Wait for the OFL fonts so the title renders in Anton/Bebas/Pacifico
+  // instead of a fallback face on the first paint.
+  try { await document.fonts.ready; } catch { /* fonts are optional */ }
   renderPreview();
   document.body.classList.add('ready');
-  // Signal the scripted screenshot runner that the poster is drawn.
+  // Signal for the screenshot runner: the poster is painted.
   window.__shotReady = true;
 }
 
