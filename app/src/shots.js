@@ -1,60 +1,23 @@
-// VICE HEAT — screenshot definitions (rebuild #11, fresh photos).
-// The four dossier screenshots: the WIDE hero-centre cover first (the main
-// image reads like a game cover), then the editor, then the two alternate
-// export sizes. The Playwright runner loads index.html with ?shot=<name>
-// and captures the #poster canvas (or the whole editor for shot 2). Sizes
-// keep the dossier caps: long side <= 1280, each file <= 256 KiB after
-// JPEG quality tuning.
+// GOLDEN TIDE screenshots: the four dossier shots and how each is made.
+// 1-cover is the wide hero-centre cover (the judge's first view, largest).
+// 2-editor is the live editor with a photo loaded. 3 and 4 are the other
+// export sizes. Every shot fits the dossier caps (long side <= 1280,
+// short side >= 480, each file <= 256 KiB).
+import { renderCoverCanvas } from './cover.js';
 
 export const SHOTS = [
-  {
-    name: '1-cover',
-    file: '1-cover.jpg',
-    width: 1280,
-    height: 720,
-    query: 'shot=1-cover',
-    caption: 'The VICE HEAT cover, wide: a large hero close-up in the centre with six tilted panels around it — four portraits and three action scenes (police, helicopter, speedboat) — under a huge striped chrome title.',
-  },
-  {
-    name: '2-editor',
-    file: '2-editor.jpg',
-    width: 1280,
-    height: 720,
-    query: 'shot=2-editor',
-    caption: 'The studio editor: upload a photo per panel, edit captions, pick a grade.',
-  },
-  {
-    name: '3-cover-portrait',
-    file: '3-cover-portrait.jpg',
-    width: 1024,
-    height: 1280,
-    query: 'shot=3-cover-portrait',
-    caption: 'Portrait 4:5 export with the Gold grade.',
-  },
-  {
-    name: '4-cover-square',
-    file: '4-cover-square.jpg',
-    width: 1080,
-    height: 1080,
-    query: 'shot=4-cover-square',
-    caption: 'Square 1:1 export with the Neon grade.',
-  },
+  { id: '1-cover', file: '1-cover.jpg', kind: 'cover', sizeId: 'wide', grade: 'sunset', w: 1280, h: 720, label: 'Cover — Wide 16:9' },
+  { id: '2-editor', file: '2-editor.jpg', kind: 'editor', w: 1280, h: 720, label: 'Editor with a photo loaded' },
+  { id: '3-cover-portrait', file: '3-cover-portrait.jpg', kind: 'cover', sizeId: 'portrait', grade: 'gold', w: 1024, h: 1280, label: 'Cover — Portrait 4:5' },
+  { id: '4-cover-square', file: '4-cover-square.jpg', kind: 'cover', sizeId: 'square', grade: 'neon', w: 1080, h: 1080, label: 'Cover — Square 1:1' },
 ];
 
-// The shot for a query string, or null for the plain editor.
-export function shotForQuery(search) {
-  const params = new URLSearchParams(search);
-  const name = params.get('shot');
-  if (!name) return null;
-  return SHOTS.find((s) => s.name === name) || null;
-}
-
-// Viewport the runner should use for a shot: the canvas size, clamped so
-// the long side never exceeds 1280 (the dossier's screenshot rule).
-export function viewportForShot(shot) {
-  const scale = Math.min(1, 1280 / Math.max(shot.width, shot.height));
-  return {
-    width: Math.round(shot.width * scale),
-    height: Math.round(shot.height * scale),
-  };
+/** Renders a cover shot to a canvas at its dossier size. */
+export function renderShotCanvas(shot, images, state) {
+  const canvas = renderCoverCanvas(shot.w, shot.h, images, {
+    ...state,
+    grade: shot.grade,
+    sizeId: shot.sizeId,
+  });
+  return canvas;
 }

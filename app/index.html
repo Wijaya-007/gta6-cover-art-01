@@ -1,99 +1,56 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VICE HEAT — Cover Studio</title>
+<title>GOLDEN TIDE — GTA-style cover studio</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="topbar">
-  <div class="brand">
-    <span class="brand-mark">VH</span>
-    <div>
-      <h1>VICE HEAT</h1>
-      <p>Cover Studio · your photos become framed crime-epic key art</p>
-    </div>
-  </div>
-  <div class="top-actions">
-    <button id="export-one" type="button" class="btn primary">Export PNG</button>
-    <button id="export-all" type="button" class="btn">Export all 3 sizes</button>
-    <button id="reset-all" type="button" class="btn ghost">Reset</button>
-  </div>
+<header class="masthead">
+  <div class="brand">GOLDEN TIDE</div>
+  <div class="sub">Turn your photo into a GTA-style cover · <span id="sizeLabel">Wide 16:9 · 1920×1080</span></div>
 </header>
-
 <main class="layout">
-  <section class="preview-col">
-    <div class="poster-frame">
-      <canvas id="poster" width="1920" height="1080"></canvas>
-    </div>
-    <p id="size-label" class="size-label">Wide 16:9 · 1920×1080</p>
-    <p class="hint">Tip: upload your own photo into any panel — the cover redraws
-    instantly, with the face kept in frame.</p>
+  <section class="stage">
+    <canvas id="cover" width="1920" height="1080"></canvas>
+    <p class="hint">Pick a panel below, then upload your own photo for it — or export the cover as it is.</p>
   </section>
-
-  <aside class="controls-col">
-    <section class="card">
-      <h2>Cover text</h2>
-      <label>Title
-        <input id="title-input" type="text" maxlength="24" value="VICE HEAT">
+  <aside class="panel">
+    <label class="field">Cover title
+      <input id="title" type="text" value="GOLDEN TIDE" maxlength="24" spellcheck="false">
+    </label>
+    <label class="field">Script subtitle
+      <input id="script" type="text" value="one last wave" maxlength="40" spellcheck="false">
+    </label>
+    <label class="field">Tagline ribbon
+      <input id="tagline" type="text" value="SEVEN TIDES · ONE COAST · NO WAY BACK" maxlength="48" spellcheck="false">
+    </label>
+    <div class="group">
+      <div class="group-title">Colour grade</div>
+      <div id="grades" class="buttons"></div>
+    </div>
+    <div class="group">
+      <div class="group-title">Export size</div>
+      <div id="sizes" class="buttons"></div>
+    </div>
+    <div class="group">
+      <div class="group-title">Photo for panel</div>
+      <div id="thumbs" class="thumbs"></div>
+      <p id="uploadHint" class="hint">Upload a photo for THE DRIVER</p>
+      <label class="upload">Upload a photo
+        <input id="upload" type="file" accept="image/*">
       </label>
-      <label>Script subtitle
-        <input id="subtitle-input" type="text" maxlength="40" value="one last ride">
-      </label>
-      <label>Tagline ribbon
-        <input id="tagline-input" type="text" maxlength="60" value="FIVE FRIENDS · ONE COAST · NO WAY BACK">
-      </label>
-      <label>Press quote
-        <input id="quote-input" type="text" maxlength="48" value="PURE GOLDEN-HOUR MAYHEM">
-      </label>
-    </section>
-
-    <section class="card">
-      <h2>Colour grade</h2>
-      <div id="grades" class="grades"></div>
-      <p class="hint">Five grades: Sunset, Neon, Gold, Teal and Noir. The grade
-      washes every panel and the vignette in one pass.</p>
-    </section>
-
-    <section class="card">
-      <h2>Export size</h2>
-      <div id="sizes" class="sizes"></div>
-      <p class="hint">Wide for banners, Square for feeds, Portrait for posters.
-      PNG out, no watermark, no upload to any server.</p>
-    </section>
-
-    <section class="card">
-      <h2>Cast photos</h2>
-      <div id="panels" class="panels"></div>
-      <p class="hint">Seven golden-hour samples are included — four character
-      portraits facing different directions plus three action scenes (police,
-      helicopter, speedboat). Tap “Upload photo” on any panel to replace it
-      with your own shot; the face slider moves the crop so the face stays
-      in frame.</p>
-    </section>
-
-    <section class="card about">
-      <h2>About this studio</h2>
-      <p>VICE HEAT turns seven photos into a framed crime-epic key art cover:
-      one large hero close-up in the centre, six panels around it at slight
-      alternating tilts, a huge striped chrome title overlapping the hero, a
-      script subtitle, a tagline ribbon, a five-star press bar, a billing
-      block, a barcode and a gold seal. The panels mix character portraits
-      with action scenes so the cover never reads as seven identical
-      headshots. Every sample photo in this build was made fresh from
-      scratch — new faces, new scenes, same seven roles. Built for the
-      make.fun gta6-cover-art-01 bounty. All artwork here is original; no
-      Rockstar logo, artwork or font is used anywhere.</p>
-    </section>
+    </div>
+    <div class="actions">
+      <button id="export" type="button" class="primary">Export PNG</button>
+      <button id="reset" type="button">Reset</button>
+    </div>
+    <p class="about">GOLDEN TIDE makes poster-style covers from any photo: a hero close-up,
+      six slanted panels, a striped chrome title and a golden-hour grade.
+      Sample photos are AI-made; your uploads stay on your machine.</p>
   </aside>
 </main>
-
-<footer class="foot">
-  <span>VICE HEAT · Cover Studio · Vol. 1</span>
-  <span>Offline app · your photos never leave this page</span>
-</footer>
-
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

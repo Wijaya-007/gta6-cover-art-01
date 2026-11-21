@@ -1,70 +1,34 @@
-// VICE HEAT — entrypoint (gta6-cover-art-01, Node 22, stdlib only).
-// Copies app/ and screenshots/ into /output and writes the dossier the
-// bounty scorer checks. Run: `node main.ts` from the repo root.
-// Rebuild #11: seven photos generated fresh from scratch, Golden Mile
-// hero-centre layout, wide main cover shot.
-
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+// GOLDEN TIDE entrypoint: copies app/ and screenshots/ into the output
+// directory and writes dossier.json with the kit's buildDossier.
+// Run: MAKEFUN_OUTPUT_DIR=out node main.ts   (the grader uses /output).
+import { cpSync, existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-app.ts';
 
-const OUT = '/output';
+const repoRoot = dirname(fileURLToPath(import.meta.url));
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const appDir = join(repoRoot, 'app');
+const shotsDir = join(repoRoot, 'screenshots');
 
-function failFast(): void {
-  // The dossier refuses an app without index.html and screenshots with no
-  // image; catch those two mistakes here with a plain message instead.
-  if (!existsSync('app/index.html')) {
-    throw new Error('app/index.html is missing: the app is a directory of static files with its page at the root');
-  }
-  const shots = existsSync('screenshots') ? readdirSync('screenshots').filter((f) => /\.(png|jpe?g)$/i.test(f)) : [];
-  if (shots.length < 3) {
-    throw new Error(`screenshots/ holds only ${shots.length} image(s): the dossier needs 3 or 4 renders`);
-  }
-  if (shots.length > 4) {
-    throw new Error(`screenshots/ holds ${shots.length} image(s): the dossier allows at most 4 renders`);
-  }
-  // The poster text renders with the app's own OFL fonts; without them the
-  // title falls back to a system face and the dossier screenshots look off.
-  const fonts = existsSync('app/fonts') ? readdirSync('app/fonts').filter((f) => /\.woff2$/i.test(f)) : [];
-  if (fonts.length < 3) {
-    throw new Error(`app/fonts/ holds only ${fonts.length} WOFF2 file(s): the app needs Anton, Bebas Neue and Pacifico`);
-  }
-  // The main cover shot is the wide hero-centre render: the dossier's
-  // first image must show the game-cover layout, not the editor.
-  if (!existsSync('screenshots/1-cover.jpg')) {
-    throw new Error('screenshots/1-cover.jpg is missing: the wide hero-centre cover shot is the dossier\'s first image');
-  }
-  // Seven sample photos feed the seven panels; a missing one renders as
-  // an empty dark panel in every screenshot. Each sample must be a real
-  // JPEG — an empty file would decode as nothing and fail the same way.
-  const samples = existsSync('app/samples') ? readdirSync('app/samples').filter((f) => /\.(png|jpe?g)$/i.test(f)) : [];
-  if (samples.length < 7) {
-    throw new Error(`app/samples/ holds only ${samples.length} photo(s): the cover needs all seven panels`);
-  }
-  for (const f of samples) {
-    const st = statSync(`app/samples/${f}`);
-    if (st.size < 10000) {
-      throw new Error(`app/samples/${f} is only ${st.size} bytes: a real sample photo is far larger`);
-    }
-  }
-  console.log(`samples: ${samples.sort().join(', ')}`);
-  console.log(`screenshots: ${shots.sort().join(', ')}`);
-  console.log(`fonts: ${fonts.sort().join(', ')}`);
+// Fail fast: the app, its cover shot and every sample photo must be there.
+if (!existsSync(join(appDir, 'index.html'))) throw new Error('app/index.html is missing');
+if (!existsSync(join(shotsDir, '1-cover.jpg'))) throw new Error('screenshots/1-cover.jpg is missing');
+for (const key of ['hero', 'insider', 'rider', 'courier', 'fixer', 'boss', 'lookout']) {
+  const p = join(appDir, 'samples', `${key}.jpg`);
+  if (!existsSync(p)) throw new Error(`app/samples/${key}.jpg is missing`);
+  if (statSync(p).size < 10000) throw new Error(`app/samples/${key}.jpg is too small (${statSync(p).size} bytes): a truncated sample`);
 }
 
-function main(): void {
-  failFast();
-  rmSync(OUT, { recursive: true, force: true });
-  mkdirSync(OUT, { recursive: true });
-  cpSync('app', `${OUT}/app`, { recursive: true });
-  cpSync('screenshots', `${OUT}/screenshots`, { recursive: true });
-  const dossier = buildDossier(OUT, {
-    text_max_bytes: 163840,
-    screenshots: { max: 4, max_bytes: 262144 },
-    app_max_files: 993,
-    app_max_bytes: 50331648,
-  });
-  writeFileSync(`${OUT}/dossier.json`, dossier);
-  console.log(`wrote ${OUT}/dossier.json (${dossier.length} bytes)`);
-}
+mkdirSync(outDir, { recursive: true });
+cpSync(appDir, join(outDir, 'app'), { recursive: true });
+cpSync(shotsDir, join(outDir, 'screenshots'), { recursive: true });
 
-main();
+const dossier = buildDossier(outDir, {
+  text_max_bytes: 163840,
+  screenshots: { max: 4, max_bytes: 262144 },
+  app_max_files: 993,
+  app_max_bytes: 50331648,
+});
+writeFileSync(join(outDir, 'dossier.json'), dossier);
+console.log(`wrote ${join(outDir, 'dossier.json')} (${dossier.length} bytes)`);

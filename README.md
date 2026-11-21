@@ -2,42 +2,31 @@
 [![rank](https://make.fun/badge/gta6-cover-art-01/Wijaya-007/gta6-cover-art-01/rank.svg)](https://make.fun/bounty/gta6-cover-art-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 [![reward](https://make.fun/badge/gta6-cover-art-01/Wijaya-007/gta6-cover-art-01/reward.svg)](https://make.fun/bounty/gta6-cover-art-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-cover-art-01)
 
-# VICE HEAT — Cover Studio
+# GOLDEN TIDE — GTA-style cover studio
 
-Turn your own photos into a framed crime-epic key art cover: one large
-hero close-up in the centre, six panels around it at slight alternating
-tilts, a huge striped chrome title overlapping the hero, a pink script
-subtitle, a tagline ribbon, a five-star press bar, a billing block, a
-barcode and a gold seal. The panels mix four character portraits facing
-different directions with three action scenes (police, helicopter,
-speedboat). Every sample photo was generated fresh from scratch for this
-build — new faces, new scenes, same seven roles. Upload a photo into any
-panel, edit the title and captions, pick one of five colour grades
-(Sunset, Neon, Gold, Teal, Noir), and export the poster as a PNG in three
-sizes — Wide 16:9 (1920×1080), Square 1:1 (1080×1080) and Portrait 4:5
-(1080×1350).
+Turn any photo into a GTA 6 poster-style cover: a hero close-up in the
+centre, six slanted panels around it, a huge striped chrome title, a pink
+script subtitle, a tagline ribbon and a golden-hour grade. Export as a PNG
+in Square 1:1 (1080×1080), Portrait 4:5 (1080×1350) or Wide 16:9 (1920×1080).
 
-## Run it
+## Try it
 
 ```sh
 node serve.ts --port 8081
-# open http://127.0.0.1:8081/
+# open http://localhost:8081/
 ```
 
-Offline static app: `app/index.html` + `app/src/*.js` + `app/style.css`,
-seven golden-hour sample photos under `app/samples/`, OFL fonts
-(Anton, Bebas Neue, Pacifico) under `app/fonts/`. No network, no upload.
+## How it works
 
-## Build the dossier
+- `app/src/cover.js` — the renderer: hero-centre layout, slanted panels,
+  striped chrome title (bands confined to the letters), sunset/gold/neon
+  grades, top bar, bottom billing bar with barcode and gold seal.
+- `app/src/main.js` — the editor: upload a photo for any panel, edit the
+  title / subtitle / tagline, pick a grade and an export size, export PNG.
+- `app/src/shots.js` + `shots.json` — the four dossier screenshots.
+- `main.ts` — the entrypoint: copies `app/` and `screenshots/` to the
+  output directory and writes `dossier.json` with the kit's `buildDossier`.
 
-```sh
-node main.ts   # writes /output/dossier.json
-```
-
-## About
-
-Built for the [make.fun gta6-cover-art-01 bounty](https://make.fun/bounty/gta6-cover-art-01)
-— a $250 prize for the best GTA 6 cover art studio. All artwork in this
-repo is original; no Rockstar logo, artwork or font is used anywhere.
-
-Referral: https://make.fun/r/9yzb6a2n
+Sample photos are AI-made for this entry. Fonts (Anton, Bebas Neue,
+Pacifico) are OFL, loaded from `app/fonts/`. No Rockstar logo, artwork or
+font is used anywhere. Everything runs offline from static files.

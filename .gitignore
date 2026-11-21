@@ -1,5 +1,3 @@
-# VICE HEAT — build outputs (rebuild #11, fresh photos from scratch)
-out/
-out2/
 node_modules/
+out/
 .DS_Store
