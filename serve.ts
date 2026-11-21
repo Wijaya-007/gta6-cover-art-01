@@ -1,6 +1,7 @@
 // VICE HEAT — tiny static server for local development and screenshots.
 // Serves the app/ directory offline on 127.0.0.1. Run: `node serve.ts`
 // (or `node serve.ts --port 8081`). No dependencies, Node 22 stdlib only.
+// Rebuild #7 serves the hero-layout studio on the same port.
 
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';

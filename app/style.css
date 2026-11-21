@@ -1,6 +1,8 @@
 /* VICE HEAT — Cover Studio styles. Dark editor, gold accents, the same
    sunset palette as the poster itself. Fonts are the app's own WOFF2
-   files (OFL: Anton, Bebas Neue, Pacifico) — nothing loads from a CDN. */
+   files (OFL: Anton, Bebas Neue, Pacifico) — nothing loads from a CDN.
+   Rebuild #7: the poster is one dominant hero panel with a 3x2 cast grid
+   below (square/portrait) or three panels per side (landscape). */
 
 @font-face {
   font-family: 'Anton';

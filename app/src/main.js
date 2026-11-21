@@ -2,6 +2,9 @@
 // Upload your own photos (or keep the seven golden-hour samples), edit the
 // title, tagline and captions, pick one of five colour grades, then export
 // the poster as a PNG in three sizes. Everything runs offline in the page.
+// The poster is one dominant hero panel (THE DRIVER) with three supporting
+// panels on each side in landscape, or a large hero above a 3x2 cast grid
+// in square and portrait — the oversized title crosses the hero image.
 
 import { drawCover, GRADES, PANELS, DEFAULT_STATE, EXPORT_SIZES } from './cover.js';
 
@@ -18,7 +21,7 @@ const SAMPLE_SRC = {
   lookout: 'samples/lookout.jpg',
 };
 
-const LS_KEY = 'vice-heat-studio-v6';
+const LS_KEY = 'vice-heat-studio-v7';
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -89,14 +92,8 @@ function currentImages() {
   return out;
 }
 
-function renderPreview() {
-  const canvas = $('#poster');
-  if (!canvas) return;
-  const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES[1];
-  canvas.width = size.w;
-  canvas.height = size.h;
-  const ctx = canvas.getContext('2d');
-  drawCover(ctx, size.w, size.h, currentImages(), {
+function currentOpts() {
+  return {
     title: state.title,
     subtitle: state.subtitle,
     tagline: state.tagline,
@@ -104,7 +101,17 @@ function renderPreview() {
     vol: state.vol,
     grade: state.grade,
     seed: state.seed,
-  });
+  };
+}
+
+function renderPreview() {
+  const canvas = $('#poster');
+  if (!canvas) return;
+  const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES[1];
+  canvas.width = size.w;
+  canvas.height = size.h;
+  const ctx = canvas.getContext('2d');
+  drawCover(ctx, size.w, size.h, currentImages(), currentOpts());
   const label = $('#size-label');
   if (label) label.textContent = `${size.label} · ${size.w}×${size.h}`;
 }
@@ -230,15 +237,7 @@ function exportPng(size) {
   canvas.width = size.w;
   canvas.height = size.h;
   const ctx = canvas.getContext('2d');
-  drawCover(ctx, size.w, size.h, currentImages(), {
-    title: state.title,
-    subtitle: state.subtitle,
-    tagline: state.tagline,
-    quote: state.quote,
-    vol: state.vol,
-    grade: state.grade,
-    seed: state.seed,
-  });
+  drawCover(ctx, size.w, size.h, currentImages(), currentOpts());
   const a = document.createElement('a');
   a.download = `vice-heat-${size.id}-${size.w}x${size.h}.png`;
   a.href = canvas.toDataURL('image/png');
@@ -297,6 +296,10 @@ export function shotFromQuery() {
 
 async function boot() {
   await loadAllImages();
+  // The poster text is drawn on canvas with the app's own fonts; wait for
+  // them so the first render (and any screenshot) uses Anton/Bebas/Pacifico,
+  // not a fallback face.
+  try { await document.fonts.ready; } catch { /* fonts are optional */ }
   buildPanelCards();
   buildGradeButtons();
   buildSizeButtons();
@@ -314,6 +317,8 @@ async function boot() {
   }
   renderPreview();
   document.body.classList.add('ready');
+  // Signal the scripted screenshot runner that the poster is drawn.
+  window.__shotReady = true;
 }
 
 boot();

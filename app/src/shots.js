@@ -12,7 +12,7 @@ export const SHOTS = [
     width: 1080,
     height: 1080,
     query: 'shot=1-cover',
-    caption: 'The VICE HEAT cover: classic collage grid, seven panels, striped centre title.',
+    caption: 'The VICE HEAT cover: dominant hero panel with three cast panels on each side, striped title crossing the hero.',
   },
   {
     name: '2-editor',
@@ -28,7 +28,7 @@ export const SHOTS = [
     width: 1024,
     height: 1280,
     query: 'shot=3-cover-portrait',
-    caption: 'Portrait 4:5 export with the Gold grade.',
+    caption: 'Portrait 4:5 export with the Gold grade: large hero above the 3x2 cast grid.',
   },
   {
     name: '4-cover-square',

@@ -2,3 +2,4 @@ out/
 out2/
 node_modules/
 .DS_Store
+# local screenshot runner scripts live outside the repo

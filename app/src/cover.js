@@ -2,6 +2,10 @@
 // Draws the GTA-style multi-panel cover on a 2D canvas. Pure canvas, no
 // network, no fonts outside the app's own WOFF2 files. All layout is
 // computed from the canvas size so the same code renders 1:1, 4:5 and 16:9.
+// Layout: landscape gets one dominant hero panel in the centre with three
+// supporting panels on each side; square and portrait get a large hero
+// panel on top (53%) above a compact 3x2 cast grid. The oversized title
+// crosses the hero image, with its stripes confined inside the letters.
 
 export const GRADES = [
   { id: 'sunset', name: 'Sunset', tint: '#ff7a18', alpha: 0.16, warm: 0.22 },
@@ -145,32 +149,48 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.font = `bold ${20 * u}px 'Anton', sans-serif`;
   ctx.fillText(s.vol, W - 34 * u - volW / 2, barY + 1 * u);
 
-  // ---- main grid: CLASSIC COLLAGE (per Yans's reference: a tight grid
-  // of panels with the big title in the centre overlapping them — the
-  // structure only, all content is our own original VICE HEAT material).
-  // Top row: four equal panels. Bottom row: three equal panels. No panel
-  // dominates; the title sits in the middle overlapping the row boundary.
+  // ---- cinematic character collage
+  // Landscape covers use the reference composition: one dominant hero
+  // image in the middle, with three supporting character panels on each side.
+  // Square and portrait exports use a large hero panel above a compact 3x2 cast grid.
   const gridX = 30 * u;
   const gridW = W - 60 * u;
   const gridY = 66 * u;
   const gridH = H * 0.8;
   const gap = 10 * u;
-  const topH = gridH * 0.52;
-  const botH = gridH - topH - gap;
-  const topW = (gridW - gap * 3) / 4;
-  const botW = (gridW - gap * 2) / 3;
+  const panels = {};
+  let titleY;
 
-  const panels = {
-    insider: { x: gridX, y: gridY, w: topW, h: topH },
-    hero: { x: gridX + topW + gap, y: gridY, w: topW, h: topH },
-    fixer: { x: gridX + (topW + gap) * 2, y: gridY, w: topW, h: topH },
-    rider: { x: gridX + (topW + gap) * 3, y: gridY, w: topW, h: topH },
-    boss: { x: gridX, y: gridY + topH + gap, w: botW, h: botH },
-    courier: { x: gridX + botW + gap, y: gridY + topH + gap, w: botW, h: botH },
-    lookout: { x: gridX + (botW + gap) * 2, y: gridY + topH + gap, w: botW, h: botH },
-  };
+  if (W / H > 1.25) {
+    const sideW = gridW * 0.205;
+    const heroW = gridW - sideW * 2 - gap * 2;
+    const rowH = (gridH - gap * 2) / 3;
+    panels.insider = { x: gridX, y: gridY, w: sideW, h: rowH };
+    panels.rider = { x: gridX, y: gridY + rowH + gap, w: sideW, h: rowH };
+    panels.boss = { x: gridX, y: gridY + (rowH + gap) * 2, w: sideW, h: rowH };
+    panels.hero = { x: gridX + sideW + gap, y: gridY, w: heroW, h: gridH };
+    panels.fixer = { x: gridX + sideW + gap + heroW + gap, y: gridY, w: sideW, h: rowH };
+    panels.courier = { x: gridX + sideW + gap + heroW + gap, y: gridY + rowH + gap, w: sideW, h: rowH };
+    panels.lookout = { x: gridX + sideW + gap + heroW + gap, y: gridY + (rowH + gap) * 2, w: sideW, h: rowH };
+    titleY = gridY + gridH * 0.54;
+  } else {
+    const heroH = gridH * 0.53;
+    const lowerY = gridY + heroH + gap;
+    const lowerH = gridH - heroH - gap;
+    const cardW = (gridW - gap * 2) / 3;
+    const cardH = (lowerH - gap) / 2;
+    panels.hero = { x: gridX, y: gridY, w: gridW, h: heroH };
+    panels.insider = { x: gridX, y: lowerY, w: cardW, h: cardH };
+    panels.rider = { x: gridX + cardW + gap, y: lowerY, w: cardW, h: cardH };
+    panels.boss = { x: gridX + (cardW + gap) * 2, y: lowerY, w: cardW, h: cardH };
+    panels.fixer = { x: gridX, y: lowerY + cardH + gap, w: cardW, h: cardH };
+    panels.courier = { x: gridX + cardW + gap, y: lowerY + cardH + gap, w: cardW, h: cardH };
+    panels.lookout = { x: gridX + (cardW + gap) * 2, y: lowerY + cardH + gap, w: cardW, h: cardH };
+    titleY = gridY + heroH * 0.78;
+  }
 
-  // Draw each photo panel with a thin gold inner border.
+  // Draw all seven character photos with a fine gold frame and a subtle
+  // color grade. The central hero is intentionally the visual anchor.
   const photoKeys = ['insider', 'hero', 'fixer', 'rider', 'boss', 'courier', 'lookout'];
   for (const key of photoKeys) {
     const p = panels[key];
@@ -185,25 +205,30 @@ export function drawCover(ctx, W, H, images, opts = {}) {
       ctx.fillStyle = '#2a1548';
       ctx.fillRect(p.x, p.y, p.w, p.h);
     }
-    // grade wash over the photo
     ctx.globalCompositeOperation = 'soft-light';
     ctx.fillStyle = grade.tint;
-    ctx.globalAlpha = grade.alpha + 0.25;
+    ctx.globalAlpha = grade.alpha + 0.22;
     ctx.fillRect(p.x, p.y, p.w, p.h);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
+    // Dark lower gradient keeps character labels legible on bright photos.
+    const shade = ctx.createLinearGradient(0, p.y + p.h * 0.55, 0, p.y + p.h);
+    shade.addColorStop(0, 'rgba(12,4,24,0)');
+    shade.addColorStop(1, 'rgba(12,4,24,0.72)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(p.x, p.y, p.w, p.h);
     ctx.restore();
+
     ctx.strokeStyle = '#f5c542';
     ctx.lineWidth = Math.max(1, 2.5 * u);
     ctx.strokeRect(p.x, p.y, p.w, p.h);
-    // name tag chip: top-row panels wear it on top, bottom-row panels on
-    // the bottom (the big title overlaps the boundary between the rows).
+
     const tag = def.tag;
-    ctx.font = `${Math.max(11, 19 * u)}px 'Bebas Neue', sans-serif`;
-    const tw = ctx.measureText(tag).width + 18 * u;
+    const tagPx = Math.max(10, 18 * u);
+    ctx.font = `${tagPx}px 'Bebas Neue', sans-serif`;
+    const tw = Math.min(p.w - 16 * u, ctx.measureText(tag).width + 22 * u);
     const th = 26 * u;
-    const isBottomRow = p.y > gridY + topH;
-    const tagY = isBottomRow ? p.y + p.h - th - 8 * u : p.y + 8 * u;
+    const tagY = p.y + p.h - th - 8 * u;
     ctx.fillStyle = 'rgba(10,5,20,0.92)';
     rr(ctx, p.x + 8 * u, tagY, tw, th, 2 * u);
     ctx.fill();
@@ -212,12 +237,11 @@ export function drawCover(ctx, W, H, images, opts = {}) {
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(tag, p.x + 18 * u, tagY + th / 2 + 1 * u);
+    ctx.fillText(tag, p.x + 18 * u, tagY + th / 2 + 1 * u, tw - 14 * u);
   }
 
-  // ---- big striped title overlapping the hero's lower edge
-  const titleY = gridY + topH + 6 * u;
-  const titlePx = fitFont(ctx, s.title, "'Anton', sans-serif", gridW * 0.94, 150 * u);
+  // ---- oversized title crossing the hero image, as in the cover references
+  const titlePx = fitFont(ctx, s.title, "'Anton', sans-serif", gridW * 0.94, (W / H > 1.25 ? 150 : 112) * u);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `${titlePx}px 'Anton', sans-serif`;
@@ -377,4 +401,3 @@ export function renderCoverCanvas(images, opts, size) {
   drawCover(ctx, size.w, size.h, images, opts);
   return canvas;
 }
-

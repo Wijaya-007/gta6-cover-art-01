@@ -14,8 +14,14 @@ function failFast(): void {
     throw new Error('app/index.html is missing: the app is a directory of static files with its page at the root');
   }
   const shots = existsSync('screenshots') ? readdirSync('screenshots').filter((f) => /\.(png|jpe?g)$/i.test(f)) : [];
-  if (shots.length === 0) {
-    throw new Error('screenshots/ holds no PNG or JPEG: the dossier needs 3 or 4 renders');
+  if (shots.length < 3) {
+    throw new Error(`screenshots/ holds only ${shots.length} image(s): the dossier needs 3 or 4 renders`);
+  }
+  // The poster text renders with the app's own OFL fonts; without them the
+  // title falls back to a system font and the cover loses its look.
+  const fonts = existsSync('app/fonts') ? readdirSync('app/fonts').filter((f) => /\.woff2$/i.test(f)) : [];
+  if (fonts.length < 3) {
+    throw new Error('app/fonts/ holds no WOFF2 fonts: the poster needs Anton, Bebas Neue and Pacifico');
   }
   console.log(`screenshots: ${shots.sort().join(', ')}`);
 }

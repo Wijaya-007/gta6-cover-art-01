@@ -4,13 +4,15 @@
 
 # VICE HEAT — Cover Studio
 
-Turn your own photos into a framed crime-epic key art cover: one hero
-close-up, six cast panels with name tags, a striped chrome title, a pink
-script subtitle, a tagline ribbon, a five-star press bar, a billing block,
-a barcode and a gold seal. Upload a photo into any panel, edit the title
-and captions, pick one of five colour grades (Sunset, Neon, Gold, Teal,
-Noir), and export the poster as a PNG in three sizes — Square 1:1
-(1080×1080), Portrait 4:5 (1080×1350) and Wide 16:9 (1920×1080).
+Turn your own photos into a framed crime-epic key art cover: one dominant
+hero close-up (THE DRIVER) with three cast panels on each side in
+landscape, or a large hero above a 3x2 cast grid in square and portrait —
+with name tags, a big striped chrome title crossing the hero, a pink script
+subtitle, a tagline ribbon, a five-star press bar, a billing block, a
+barcode and a gold seal. Upload a photo into any panel, edit the title and
+captions, pick one of five colour grades (Sunset, Neon, Gold, Teal, Noir),
+and export the poster as a PNG in three sizes — Square 1:1 (1080×1080),
+Portrait 4:5 (1080×1350) and Wide 16:9 (1920×1080).
 
 ## Run it
 
