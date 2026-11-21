@@ -1,9 +1,11 @@
-// VICE HEAT — cover studio editor (rebuild #8).
+// VICE HEAT — cover studio editor (rebuild #10, Golden Mile formula).
 // Upload your own photos (or keep the seven golden-hour samples), edit the
 // title, tagline and captions, pick one of five colour grades, then export
 // the poster as a PNG in three sizes. Everything runs offline in the page.
-// Samples mix four character portraits with three action scenes (police,
-// helicopter, airplane).
+// The cover is a hero-centre game cover: one large hero close-up in the
+// middle, six panels around it at slight alternating tilts, a huge striped
+// chrome title overlapping the hero. Samples mix four character portraits
+// with three action scenes (police, helicopter, speedboat).
 
 import { drawCover, GRADES, PANELS, DEFAULT_STATE, EXPORT_SIZES } from './cover.js';
 
@@ -20,7 +22,12 @@ const SAMPLE_SRC = {
   lookout: 'samples/lookout.jpg',
 };
 
-const LS_KEY = 'vice-heat-studio-v8';
+const LS_KEY = 'vice-heat-studio-v10';
+
+// The editor opens on the Wide export: the hero-centre game cover reads
+// best wide, and every fallback below points here so a future reorder of
+// EXPORT_SIZES cannot silently change the default.
+const DEFAULT_SIZE_ID = 'wide';
 
 function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -48,7 +55,7 @@ function defaultState() {
   for (const p of PANELS) focus[p.key] = [...p.focus];
   return {
     ...DEFAULT_STATE,
-    sizeId: 'portrait',
+    sizeId: DEFAULT_SIZE_ID,
     grade: 'sunset',
     focus,
     uploads: {},
@@ -106,7 +113,7 @@ function currentOpts() {
 function renderPreview() {
   const canvas = $('#poster');
   if (!canvas) return;
-  const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES[1];
+  const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES.find((s) => s.id === DEFAULT_SIZE_ID);
   canvas.width = size.w;
   canvas.height = size.h;
   const ctx = canvas.getContext('2d');
@@ -247,7 +254,7 @@ function bindExport() {
   const one = $('#export-one');
   if (one) {
     one.addEventListener('click', () => {
-      const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES[1];
+      const size = EXPORT_SIZES.find((s) => s.id === state.sizeId) || EXPORT_SIZES.find((s) => s.id === DEFAULT_SIZE_ID);
       exportPng(size);
     });
   }
@@ -285,12 +292,14 @@ export function shotFromQuery() {
   const shot = params.get('shot');
   if (!shot) return null;
   const map = {
-    '1-cover': { sizeId: 'square', grade: 'sunset' },
+    // Rebuild #10: the main cover shot is WIDE (1280x720) — the hero-centre
+    // game-cover layout reads best wide, like the top-1 reference.
+    '1-cover': { sizeId: 'wide', grade: 'sunset' },
     '2-editor': null, // full editor, captured as-is
     '3-cover-portrait': { sizeId: 'portrait', grade: 'gold' },
     '4-cover-square': { sizeId: 'square', grade: 'neon' },
   };
-  return { name: shot, ...(map[shot] || { sizeId: 'portrait', grade: 'sunset' }) };
+  return { name: shot, ...(map[shot] || { sizeId: 'wide', grade: 'sunset' }) };
 }
 
 async function boot() {

@@ -1,11 +1,16 @@
-// VICE HEAT — poster renderer (rebuild #8).
+// VICE HEAT — poster renderer (rebuild #10, Golden Mile formula).
 // Draws the GTA-style multi-panel cover on a 2D canvas. Pure canvas, no
 // network, no fonts outside the app's own WOFF2 files. All layout is
 // computed from the canvas size so the same code renders 1:1, 4:5 and 16:9.
-// Layout: classic collage grid — four panels on top, three below, big
-// striped title in the centre overlapping the row seam. The seven panels
-// mix four character portraits with three action scenes (police, helicopter,
-// speedboat) so no two neighbours face or read the same way.
+// Layout: GOLDEN MILE hero-centre — one LARGE hero close-up dominates the
+// centre, seven panels around it at slight alternating tilts (2-3 degrees),
+// so the composition reads as a dynamic game cover, never a rigid grid.
+// The huge striped chrome title overlaps the hero and the panels; a script
+// subtitle, a tagline ribbon, a five-star press bar, a billing block, a
+// barcode and a gold seal finish it. Panels mix four character portraits
+// (facing different directions) with three action scenes (police,
+// helicopter, speedboat) — the airplane panel was dropped, helicopter +
+// airplane together were redundant flying vehicles.
 
 export const GRADES = [
   // Sunset is the default grade and the poster's whole tone (Sundown
@@ -20,13 +25,10 @@ export const GRADES = [
 ];
 
 // The seven panels of a VICE HEAT cover. `tag` is the name chip drawn on
-// the panel; `photo` is the key into the images map; `focus` is the
-// face-aware anchor (0..1) used by the cover-fit crop. Scene panels
-// (helicopter, speedboat) use a centre focus — there is no face to keep.
-// Tags match the picture: THE LAW is the police scene, THE PILOT the
-// helicopter, THE CAPTAIN the speedboat (rebuild #9: the old FIXER/BOSS/
-// LOOKOUT names did not match their pictures, and the airplane panel was
-// dropped — helicopter + airplane together were redundant flying vehicles).
+// the panel; `focus` is the face-aware anchor (0..1) used by the cover-fit
+// crop. Scene panels (helicopter, speedboat) use a centre focus — there is
+// no face to keep. Tags match the picture: THE LAW is the police scene,
+// THE PILOT the helicopter, THE CAPTAIN the speedboat.
 export const PANELS = [
   { key: 'hero', tag: 'THE DRIVER', focus: [0.5, 0.32] },
   { key: 'insider', tag: 'THE INSIDER', focus: [0.5, 0.3] },
@@ -114,6 +116,73 @@ function fitFont(ctx, text, fontFamily, maxWidth, startPx, weight = '') {
   return px;
 }
 
+// Draws one photo panel at a slight tilt, Golden Mile style. The panel is
+// drawn in a rotated frame around its own centre, expanded by a few units
+// on each side so the tilt leaves no triangular gaps against its
+// neighbours — the panels overlap a hair at the corners, like a collage
+// pinned at angles, never a rigid grid. `tagSide` puts the name chip on
+// the panel's outer edge (away from the hero) so the hero never covers it.
+function drawPanel(ctx, p, def, img, grade, u, slantDeg, tagSide) {
+  const rad = (slantDeg * Math.PI) / 180;
+  const cx = p.x + p.w / 2;
+  const cy = p.y + p.h / 2;
+  const pad = 4 * u; // expansion that hides the rotation gaps
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rad);
+  const x = -p.w / 2 - pad;
+  const y = -p.h / 2 - pad;
+  const w = p.w + pad * 2;
+  const h = p.h + pad * 2;
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  if (img) drawCoverFit(ctx, img, x, y, w, h, def.focus[0], def.focus[1]);
+  else {
+    ctx.fillStyle = '#2a1548';
+    ctx.fillRect(x, y, w, h);
+  }
+  // Grade wash over the photo — a light touch (the old alpha+0.25 flood
+  // turned every panel into a neon orange wash; this stays smooth).
+  ctx.globalCompositeOperation = 'soft-light';
+  ctx.fillStyle = grade.tint;
+  ctx.globalAlpha = grade.alpha + 0.1;
+  ctx.fillRect(x, y, w, h);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  // Dark lower gradient keeps the name chip legible on bright photos.
+  const shade = ctx.createLinearGradient(0, y + h * 0.55, 0, y + h);
+  shade.addColorStop(0, 'rgba(12,4,24,0)');
+  shade.addColorStop(1, 'rgba(12,4,24,0.55)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+
+  // Gold inner border + name chip, drawn in the same tilted frame.
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rad);
+  ctx.strokeStyle = '#f5c542';
+  ctx.lineWidth = Math.max(1, 2.5 * u);
+  ctx.strokeRect(x, y, w, h);
+  const tag = def.tag;
+  ctx.font = `${Math.max(10, 18 * u)}px 'Bebas Neue', sans-serif`;
+  const tw = Math.min(w - 16 * u, ctx.measureText(tag).width + 22 * u);
+  const th = 26 * u;
+  const tagY = y + 8 * u;
+  const tagX = tagSide === 'right' ? x + w - tw - 8 * u : x + 8 * u;
+  ctx.fillStyle = 'rgba(10,5,20,0.92)';
+  rr(ctx, tagX, tagY, tw, th, 2 * u);
+  ctx.fill();
+  ctx.fillStyle = '#f5c542';
+  ctx.fillRect(tagSide === 'right' ? tagX + tw - 5 * u : tagX, tagY, 5 * u, th);
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(tag, tagX + (tagSide === 'right' ? 8 * u : 18 * u), tagY + th / 2 + 1 * u, tw - 14 * u);
+  ctx.restore();
+}
+
 // --- the poster -----------------------------------------------------------
 
 // Draws the whole VICE HEAT cover. `images` maps panel keys to HTMLImage
@@ -162,91 +231,87 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.font = `bold ${20 * u}px 'Anton', sans-serif`;
   ctx.fillText(s.vol, W - 34 * u - volW / 2, barY + 1 * u);
 
-  // ---- main grid: CLASSIC COLLAGE (per Yans's reference: a tight grid
-  // of panels with the big title in the centre overlapping them — the
-  // structure only, all content is our own original VICE HEAT material).
-  // Top row: four equal panels. Bottom row: three equal panels. No panel
-  // dominates; the title sits in the middle overlapping the row boundary.
-  // Four panels are character portraits facing different directions, three
-  // are action scenes (police, helicopter, speedboat) — the mix keeps the
-  // grid from reading as seven identical headshots.
+  // ---- hero-centre panel arrangement (Golden Mile formula)
+  // One LARGE hero close-up dominates the centre; the other six panels
+  // sit around it at slight alternating tilts, so the composition reads
+  // as a dynamic game cover, never a rigid grid. The hero is drawn last
+  // so it sits on top where its expanded edges meet the side panels.
   const gridX = 30 * u;
   const gridW = W - 60 * u;
   const gridY = 66 * u;
   const gridH = H * 0.8;
   const gap = 10 * u;
-  const topH = gridH * 0.52;
-  const botH = gridH - topH - gap;
-  const topW = (gridW - gap * 3) / 4;
-  const botW = (gridW - gap * 2) / 3;
+  const panels = {};
+  let titleY;
+  const wide = W / H > 1.25;
 
-  const panels = {
-    insider: { x: gridX, y: gridY, w: topW, h: topH },
-    hero: { x: gridX + topW + gap, y: gridY, w: topW, h: topH },
-    fixer: { x: gridX + (topW + gap) * 2, y: gridY, w: topW, h: topH },
-    rider: { x: gridX + (topW + gap) * 3, y: gridY, w: topW, h: topH },
-    boss: { x: gridX, y: gridY + topH + gap, w: botW, h: botH },
-    courier: { x: gridX + botW + gap, y: gridY + topH + gap, w: botW, h: botH },
-    lookout: { x: gridX + (botW + gap) * 2, y: gridY + topH + gap, w: botW, h: botH },
-  };
-
-  // Draw each photo panel with a thin gold inner border.
-  const photoKeys = ['insider', 'hero', 'fixer', 'rider', 'boss', 'courier', 'lookout'];
-  for (const key of photoKeys) {
-    const p = panels[key];
-    const def = PANELS.find((d) => d.key === key);
-    const img = images[key];
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(p.x, p.y, p.w, p.h);
-    ctx.clip();
-    if (img) drawCoverFit(ctx, img, p.x, p.y, p.w, p.h, def.focus[0], def.focus[1]);
-    else {
-      ctx.fillStyle = '#2a1548';
-      ctx.fillRect(p.x, p.y, p.w, p.h);
-    }
-    // grade wash over the photo — a light touch (rebuild #9: the old
-    // alpha+0.25 flood turned every panel into a neon orange wash).
-    ctx.globalCompositeOperation = 'soft-light';
-    ctx.fillStyle = grade.tint;
-    ctx.globalAlpha = grade.alpha + 0.1;
-    ctx.fillRect(p.x, p.y, p.w, p.h);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
-    ctx.restore();
-    ctx.strokeStyle = '#f5c542';
-    ctx.lineWidth = Math.max(1, 2.5 * u);
-    ctx.strokeRect(p.x, p.y, p.w, p.h);
-    // name tag chip: top-row panels wear it on top, bottom-row panels on
-    // the bottom (the big title overlaps the boundary between the rows).
-    const tag = def.tag;
-    ctx.font = `${Math.max(11, 19 * u)}px 'Bebas Neue', sans-serif`;
-    const tw = ctx.measureText(tag).width + 18 * u;
-    const th = 26 * u;
-    const isBottomRow = p.y > gridY + topH;
-    const tagY = isBottomRow ? p.y + p.h - th - 8 * u : p.y + 8 * u;
-    ctx.fillStyle = 'rgba(10,5,20,0.92)';
-    rr(ctx, p.x + 8 * u, tagY, tw, th, 2 * u);
-    ctx.fill();
-    ctx.fillStyle = '#f5c542';
-    ctx.fillRect(p.x + 8 * u, tagY, 5 * u, th);
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(tag, p.x + 18 * u, tagY + th / 2 + 1 * u);
+  if (wide) {
+    // Landscape: hero large top-centre, one panel on each side of it,
+    // four panels in a row beneath — the Golden Mile arrangement. The
+    // hero's face is the first thing the eye lands on, and the centre
+    // below it is filled with panels, not empty backdrop.
+    const heroW = gridW * 0.38;
+    const heroH = gridH * 0.58;
+    const sideW = (gridW - heroW - gap * 2) / 2;
+    const botH = gridH - heroH - gap;
+    const botW = (gridW - gap * 3) / 4;
+    const botY = gridY + heroH + gap;
+    panels.insider = { x: gridX, y: gridY, w: sideW, h: heroH };
+    panels.hero = { x: gridX + sideW + gap, y: gridY, w: heroW, h: heroH };
+    panels.rider = { x: gridX + sideW + gap + heroW + gap, y: gridY, w: sideW, h: heroH };
+    panels.fixer = { x: gridX, y: botY, w: botW, h: botH };
+    panels.boss = { x: gridX + botW + gap, y: botY, w: botW, h: botH };
+    panels.courier = { x: gridX + (botW + gap) * 2, y: botY, w: botW, h: botH };
+    panels.lookout = { x: gridX + (botW + gap) * 3, y: botY, w: botW, h: botH };
+    titleY = gridY + heroH * 0.82;
+  } else {
+    // Square / portrait: hero large on top, six panels in a 3x2 grid
+    // below it, all slightly tilted. The title overlaps the hero's lower
+    // edge and the top of the grid beneath it.
+    const heroH = gridH * 0.5;
+    const lowerY = gridY + heroH + gap;
+    const lowerH = gridH - heroH - gap;
+    const cardW = (gridW - gap * 2) / 3;
+    const cardH = (lowerH - gap) / 2;
+    panels.hero = { x: gridX, y: gridY, w: gridW, h: heroH };
+    panels.insider = { x: gridX, y: lowerY, w: cardW, h: cardH };
+    panels.fixer = { x: gridX + cardW + gap, y: lowerY, w: cardW, h: cardH };
+    panels.rider = { x: gridX + (cardW + gap) * 2, y: lowerY, w: cardW, h: cardH };
+    panels.boss = { x: gridX, y: lowerY + cardH + gap, w: cardW, h: cardH };
+    panels.courier = { x: gridX + cardW + gap, y: lowerY + cardH + gap, w: cardW, h: cardH };
+    panels.lookout = { x: gridX + (cardW + gap) * 2, y: lowerY + cardH + gap, w: cardW, h: cardH };
+    titleY = gridY + heroH * 0.8;
   }
 
-  // ---- big striped title overlapping the row seam
+  // Slant per panel (degrees, alternating so no two neighbours lean the
+  // same way, and wide enough to read as a tilt, not a rendering wobble).
+  // The hero stays straight — it is the anchor.
+  const slants = wide
+    ? { insider: -3, fixer: 2.5, boss: -2.5, hero: 0, rider: 3, courier: 2.5, lookout: -3 }
+    : { hero: 0, insider: -3, fixer: 2.5, rider: -2.5, boss: 2.5, courier: -3, lookout: 2.5 };
+  // Name-chip side: outer edge, away from the hero and the centred title.
+  const tagSides = wide
+    ? { insider: 'left', fixer: 'left', boss: 'left', hero: 'left', rider: 'right', courier: 'left', lookout: 'right' }
+    : { hero: 'left', insider: 'left', fixer: 'left', rider: 'left', boss: 'left', courier: 'left', lookout: 'left' };
+  // Draw side panels first, hero last (on top at the overlaps).
+  const drawOrder = wide
+    ? ['fixer', 'boss', 'courier', 'lookout', 'insider', 'rider', 'hero']
+    : ['insider', 'fixer', 'rider', 'boss', 'courier', 'lookout', 'hero'];
+  for (const key of drawOrder) {
+    const def = PANELS.find((d) => d.key === key);
+    drawPanel(ctx, panels[key], def, images[key], grade, u, slants[key], tagSides[key]);
+  }
+
+  // ---- big striped title overlapping the hero and the panels
   // Wide 16:9 exports have room for a larger title than square/portrait.
-  const titleY = gridY + topH + 6 * u;
-  const titleStartPx = (W / H > 1.25 ? 170 : 150) * u;
+  const titleStartPx = (wide ? 170 : 150) * u;
   const titlePx = fitFont(ctx, s.title, "'Anton', sans-serif", gridW * 0.94, titleStartPx);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `${titlePx}px 'Anton', sans-serif`;
   // Chrome gradient fill: yellow -> orange -> pink -> purple, MUTED
-  // (rebuild #9: the old neon stops read as cheap CGI; these keep the
-  // same hues at lower saturation, smooth like the top 1-5 entries).
+  // (the old neon stops read as cheap CGI; these keep the same hues at
+  // lower saturation, smooth like the top 1-5 entries).
   const tg = ctx.createLinearGradient(0, titleY - titlePx * 0.55, 0, titleY + titlePx * 0.55);
   tg.addColorStop(0, '#f2d67c');
   tg.addColorStop(0.35, '#e08a68');
@@ -285,8 +350,12 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   const subY = titleY + titlePx * 0.62;
   const subPx = fitFont(ctx, s.subtitle, "'Pacifico', cursive", gridW * 0.6, 58 * u);
   ctx.font = `${subPx}px 'Pacifico', cursive`;
-  // Muted rose, soft glow (rebuild #9: the old hot-pink + strong glow
-  // was another neon-CGI cue).
+  // Muted rose, soft glow (the old hot-pink + strong glow was another
+  // neon-CGI cue). A dark stroke keeps it legible where it crosses a
+  // bright panel (the helicopter sky) instead of washing out.
+  ctx.lineWidth = Math.max(2, 5 * u);
+  ctx.strokeStyle = '#2a0a3e';
+  ctx.strokeText(s.subtitle, W / 2, subY);
   ctx.fillStyle = '#e89ec4';
   ctx.shadowColor = '#c65a8a';
   ctx.shadowBlur = 10 * u;
@@ -311,9 +380,9 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.fillText(s.tagline, W / 2, ribY + 1 * u);
 
   // ---- bottom bar: COMING SOON + billing + barcode + gold seal
-  // Rebuild #9: all VERTICAL measurements use v (H-based). The old code
-  // measured them in u (W-based), so on a 16:9 canvas (u = 1.78) the
-  // billing second line and the barcode box ran past the bottom edge.
+  // All VERTICAL measurements use v (H-based). The old code measured
+  // them in u (W-based), so on a 16:9 canvas (u = 1.78) the billing
+  // second line and the barcode box ran past the bottom edge.
   // Horizontal positions still use u; the bar now ends inside the frame
   // at every export size (verified at 1920x1080, 1080x1080, 1080x1350).
   const botY = gridY + gridH + 26 * v;
@@ -350,9 +419,10 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   // Gold seal: starburst circle, bottom-right corner. Kept clear of the
   // barcode (which now sits 250u from the right edge): the seal spans
   // roughly W-122u..W-26u, the barcode ends at W-250u+110u = W-140u.
-  // Rebuild #9: the seal is sized in v like the rest of the bottom bar.
+  // The seal is sized in v like the rest of the bottom bar, and lifted
+  // a touch so its lower edge clears the inner gold frame.
   const sealCx = W - 74 * u;
-  const sealCy = H - 74 * v;
+  const sealCy = H - 88 * v;
   const sealR = 48 * v;
   ctx.save();
   ctx.translate(sealCx, sealCy);
@@ -385,8 +455,8 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.fill();
   ctx.restore();
 
-  // ---- warm vignette for the golden-hour grade — halved in rebuild #9
-  // (the old warm*0.5 orange ring was part of the CGI look).
+  // ---- warm vignette for the golden-hour grade — light, so the poster
+  // stays smooth instead of ringing the frame in orange.
   const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75);
   vg.addColorStop(0, 'rgba(255,150,50,0)');
   vg.addColorStop(1, `rgba(255,110,20,${grade.warm * 0.25})`);

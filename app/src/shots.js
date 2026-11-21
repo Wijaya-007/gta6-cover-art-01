@@ -1,18 +1,19 @@
-// VICE HEAT — screenshot definitions (rebuild #8).
-// The four dossier screenshots: the cover first, then the editor, then the
-// two alternate export sizes. The Playwright runner loads index.html with
-// ?shot=<name> and captures the #poster canvas (or the whole editor for
-// shot 2). Sizes keep the dossier caps: long side <= 1280, each file
-// <= 256 KiB after JPEG quality tuning.
+// VICE HEAT — screenshot definitions (rebuild #10, Golden Mile formula).
+// The four dossier screenshots: the WIDE hero-centre cover first (the main
+// image reads like a game cover), then the editor, then the two alternate
+// export sizes. The Playwright runner loads index.html with ?shot=<name>
+// and captures the #poster canvas (or the whole editor for shot 2). Sizes
+// keep the dossier caps: long side <= 1280, each file <= 256 KiB after
+// JPEG quality tuning.
 
 export const SHOTS = [
   {
     name: '1-cover',
     file: '1-cover.jpg',
-    width: 1080,
-    height: 1080,
+    width: 1280,
+    height: 720,
     query: 'shot=1-cover',
-    caption: 'The VICE HEAT cover: classic collage grid mixing four portraits with police, helicopter and airplane action scenes.',
+    caption: 'The VICE HEAT cover, wide: a large hero close-up in the centre with six tilted panels around it — four portraits and three action scenes (police, helicopter, speedboat) — under a huge striped chrome title.',
   },
   {
     name: '2-editor',
