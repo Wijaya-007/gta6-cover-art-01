@@ -5,14 +5,16 @@
 // Layout: classic collage grid — four panels on top, three below, big
 // striped title in the centre overlapping the row seam. The seven panels
 // mix four character portraits with three action scenes (police, helicopter,
-// airplane) so no two neighbours face or read the same way.
+// speedboat) so no two neighbours face or read the same way.
 
 export const GRADES = [
   // Sunset is the default grade and the poster's whole tone (Sundown
-  // Racket style): a strong warm wash so every panel reads golden-hour.
-  { id: 'sunset', name: 'Sunset', tint: '#ff7a18', alpha: 0.2, warm: 0.3 },
+  // Racket style): a LIGHT warm touch, not a flood. The photos are
+  // already golden-hour; the grade just warms them a little. Rebuild #9
+  // toned this down — the old 0.20/0.30 wash read as cheap CGI.
+  { id: 'sunset', name: 'Sunset', tint: '#ff7a18', alpha: 0.1, warm: 0.12 },
   { id: 'neon', name: 'Neon', tint: '#ff2e88', alpha: 0.18, warm: 0.08 },
-  { id: 'gold', name: 'Gold', tint: '#ffb400', alpha: 0.2, warm: 0.3 },
+  { id: 'gold', name: 'Gold', tint: '#ffb400', alpha: 0.12, warm: 0.14 },
   { id: 'teal', name: 'Teal', tint: '#00c2a8', alpha: 0.16, warm: 0.0 },
   { id: 'noir', name: 'Noir', tint: '#5a5a6e', alpha: 0.28, warm: 0.0 },
 ];
@@ -20,15 +22,19 @@ export const GRADES = [
 // The seven panels of a VICE HEAT cover. `tag` is the name chip drawn on
 // the panel; `photo` is the key into the images map; `focus` is the
 // face-aware anchor (0..1) used by the cover-fit crop. Scene panels
-// (helicopter, airplane) use a centre focus — there is no face to keep.
+// (helicopter, speedboat) use a centre focus — there is no face to keep.
+// Tags match the picture: THE LAW is the police scene, THE PILOT the
+// helicopter, THE CAPTAIN the speedboat (rebuild #9: the old FIXER/BOSS/
+// LOOKOUT names did not match their pictures, and the airplane panel was
+// dropped — helicopter + airplane together were redundant flying vehicles).
 export const PANELS = [
   { key: 'hero', tag: 'THE DRIVER', focus: [0.5, 0.32] },
   { key: 'insider', tag: 'THE INSIDER', focus: [0.5, 0.3] },
-  { key: 'boss', tag: 'THE BOSS', focus: [0.5, 0.45] },
+  { key: 'boss', tag: 'THE PILOT', focus: [0.5, 0.45] },
   { key: 'rider', tag: 'THE RIDER', focus: [0.5, 0.3] },
   { key: 'courier', tag: 'THE COURIER', focus: [0.5, 0.3] },
-  { key: 'fixer', tag: 'THE FIXER', focus: [0.5, 0.35] },
-  { key: 'lookout', tag: 'THE LOOKOUT', focus: [0.5, 0.5] },
+  { key: 'fixer', tag: 'THE LAW', focus: [0.5, 0.35] },
+  { key: 'lookout', tag: 'THE CAPTAIN', focus: [0.5, 0.5] },
 ];
 
 export const DEFAULT_STATE = {
@@ -117,6 +123,10 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   const s = { ...DEFAULT_STATE, ...opts };
   const grade = GRADES.find((g) => g.id === s.grade) || GRADES[0];
   const u = W / 1080; // unit: 1 at 1080 wide
+  // Vertical unit: 1 at 1080 tall. u scales with WIDTH, so on a 16:9
+  // canvas (u = 1.78) every u-based vertical offset overflows the bottom
+  // bar past the frame. The bottom bar measures vertically in v.
+  const v = H / 1080;
 
   // Backdrop: deep purple night + gold frame.
   ctx.fillStyle = '#160a2e';
@@ -158,7 +168,7 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   // Top row: four equal panels. Bottom row: three equal panels. No panel
   // dominates; the title sits in the middle overlapping the row boundary.
   // Four panels are character portraits facing different directions, three
-  // are action scenes (police, helicopter, airplane) — the mix keeps the
+  // are action scenes (police, helicopter, speedboat) — the mix keeps the
   // grid from reading as seven identical headshots.
   const gridX = 30 * u;
   const gridW = W - 60 * u;
@@ -195,10 +205,11 @@ export function drawCover(ctx, W, H, images, opts = {}) {
       ctx.fillStyle = '#2a1548';
       ctx.fillRect(p.x, p.y, p.w, p.h);
     }
-    // grade wash over the photo
+    // grade wash over the photo — a light touch (rebuild #9: the old
+    // alpha+0.25 flood turned every panel into a neon orange wash).
     ctx.globalCompositeOperation = 'soft-light';
     ctx.fillStyle = grade.tint;
-    ctx.globalAlpha = grade.alpha + 0.25;
+    ctx.globalAlpha = grade.alpha + 0.1;
     ctx.fillRect(p.x, p.y, p.w, p.h);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -233,12 +244,14 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.font = `${titlePx}px 'Anton', sans-serif`;
-  // Chrome gradient fill: yellow -> orange -> pink -> purple.
+  // Chrome gradient fill: yellow -> orange -> pink -> purple, MUTED
+  // (rebuild #9: the old neon stops read as cheap CGI; these keep the
+  // same hues at lower saturation, smooth like the top 1-5 entries).
   const tg = ctx.createLinearGradient(0, titleY - titlePx * 0.55, 0, titleY + titlePx * 0.55);
-  tg.addColorStop(0, '#ffe259');
-  tg.addColorStop(0.35, '#ff7e5f');
-  tg.addColorStop(0.65, '#ff2e88');
-  tg.addColorStop(1, '#c86bff');
+  tg.addColorStop(0, '#f2d67c');
+  tg.addColorStop(0.35, '#e08a68');
+  tg.addColorStop(0.65, '#d2698f');
+  tg.addColorStop(1, '#a98fd0');
   ctx.lineWidth = Math.max(2, 7 * u);
   ctx.strokeStyle = '#2a0a3e';
   ctx.strokeText(s.title, W / 2, titleY);
@@ -272,9 +285,11 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   const subY = titleY + titlePx * 0.62;
   const subPx = fitFont(ctx, s.subtitle, "'Pacifico', cursive", gridW * 0.6, 58 * u);
   ctx.font = `${subPx}px 'Pacifico', cursive`;
-  ctx.fillStyle = '#ff8fd1';
-  ctx.shadowColor = '#ff2e88';
-  ctx.shadowBlur = 18 * u;
+  // Muted rose, soft glow (rebuild #9: the old hot-pink + strong glow
+  // was another neon-CGI cue).
+  ctx.fillStyle = '#e89ec4';
+  ctx.shadowColor = '#c65a8a';
+  ctx.shadowBlur = 10 * u;
   ctx.fillText(s.subtitle, W / 2, subY);
   ctx.shadowBlur = 0;
 
@@ -296,43 +311,49 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.fillText(s.tagline, W / 2, ribY + 1 * u);
 
   // ---- bottom bar: COMING SOON + billing + barcode + gold seal
-  const botY = gridY + gridH + 26 * u;
+  // Rebuild #9: all VERTICAL measurements use v (H-based). The old code
+  // measured them in u (W-based), so on a 16:9 canvas (u = 1.78) the
+  // billing second line and the barcode box ran past the bottom edge.
+  // Horizontal positions still use u; the bar now ends inside the frame
+  // at every export size (verified at 1920x1080, 1080x1080, 1080x1350).
+  const botY = gridY + gridH + 26 * v;
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ff5fa2';
-  const csPx = fitFont(ctx, 'COMING SOON', "'Anton', sans-serif", gridW * 0.3, 34 * u);
+  const csPx = fitFont(ctx, 'COMING SOON', "'Anton', sans-serif", gridW * 0.3, 34 * v);
   ctx.font = `${csPx}px 'Anton', sans-serif`;
-  ctx.fillText('COMING SOON', gridX, botY + 10 * u);
+  ctx.fillText('COMING SOON', gridX, botY + 10 * v);
   ctx.fillStyle = '#e8dcc8';
   ctx.textAlign = 'center';
-  ctx.font = `${Math.max(9, 13.5 * u)}px 'Bebas Neue', sans-serif`;
-  ctx.fillText('A SUNSET PICTURES PRODUCTION · STARRING YOU', W / 2, botY + 2 * u);
-  ctx.fillText('SHOT ON YOUR OWN CAMERA · GRADED BY HAND', W / 2, botY + 20 * u);
+  ctx.font = `${Math.max(9, 13.5 * v)}px 'Bebas Neue', sans-serif`;
+  ctx.fillText('A SUNSET PICTURES PRODUCTION · STARRING YOU', W / 2, botY + 2 * v);
+  ctx.fillText('SHOT ON YOUR OWN CAMERA · GRADED BY HAND', W / 2, botY + 20 * v);
   // Barcode: deterministic bars from the seed. It sits LEFT of the gold
   // seal with a clear gap — the old position overlapped the seal, which
   // covered the barcode's right end.
   const rng = mulberry32(s.seed);
   const bcX = W - gridX - 250 * u;
   const bcW = 110 * u;
-  const bcH = 34 * u;
+  const bcH = 34 * v;
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(bcX - 6 * u, botY - 8 * u, bcW + 12 * u, bcH + 16 * u);
+  ctx.fillRect(bcX - 6 * u, botY - 8 * v, bcW + 12 * u, bcH + 16 * v);
   ctx.fillStyle = '#111111';
   let bx = bcX;
   while (bx < bcX + bcW) {
     const bw = (1 + Math.floor(rng() * 4)) * u;
-    if (rng() > 0.45) ctx.fillRect(bx, botY - 4 * u, bw, bcH);
+    if (rng() > 0.45) ctx.fillRect(bx, botY - 4 * v, bw, bcH);
     bx += bw + (1 + Math.floor(rng() * 3)) * u;
   }
   ctx.fillStyle = '#111111';
-  ctx.font = `${Math.max(8, 11 * u)}px 'Bebas Neue', sans-serif`;
+  ctx.font = `${Math.max(8, 11 * v)}px 'Bebas Neue', sans-serif`;
   ctx.textAlign = 'center';
-  ctx.fillText('0 10472 85991 8', bcX + bcW / 2, botY + bcH + 4 * u);
+  ctx.fillText('0 10472 85991 8', bcX + bcW / 2, botY + bcH + 4 * v);
   // Gold seal: starburst circle, bottom-right corner. Kept clear of the
   // barcode (which now sits 250u from the right edge): the seal spans
   // roughly W-122u..W-26u, the barcode ends at W-250u+110u = W-140u.
+  // Rebuild #9: the seal is sized in v like the rest of the bottom bar.
   const sealCx = W - 74 * u;
-  const sealCy = H - 74 * u;
-  const sealR = 48 * u;
+  const sealCy = H - 74 * v;
+  const sealR = 48 * v;
   ctx.save();
   ctx.translate(sealCx, sealCy);
   ctx.beginPath();
@@ -348,7 +369,7 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.fillStyle = '#f5c542';
   ctx.fill();
   ctx.strokeStyle = '#8a6d1f';
-  ctx.lineWidth = 2 * u;
+  ctx.lineWidth = 2 * v;
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(0, 0, sealR * 0.68, 0, Math.PI * 2);
@@ -356,18 +377,19 @@ export function drawCover(ctx, W, H, images, opts = {}) {
   ctx.stroke();
   ctx.fillStyle = '#3a2a00';
   ctx.textAlign = 'center';
-  ctx.font = `bold ${Math.max(9, 13 * u)}px 'Anton', sans-serif`;
-  ctx.fillText('ORIGINAL', 0, -8 * u);
-  ctx.fillText('COVER ART', 0, 8 * u);
-  star(ctx, 0, 20 * u, 7 * u, 3 * u);
+  ctx.font = `bold ${Math.max(9, 13 * v)}px 'Anton', sans-serif`;
+  ctx.fillText('ORIGINAL', 0, -8 * v);
+  ctx.fillText('COVER ART', 0, 8 * v);
+  star(ctx, 0, 20 * v, 7 * v, 3 * v);
   ctx.fillStyle = '#3a2a00';
   ctx.fill();
   ctx.restore();
 
-  // ---- warm vignette for the golden-hour grade
+  // ---- warm vignette for the golden-hour grade — halved in rebuild #9
+  // (the old warm*0.5 orange ring was part of the CGI look).
   const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75);
   vg.addColorStop(0, 'rgba(255,150,50,0)');
-  vg.addColorStop(1, `rgba(255,110,20,${grade.warm * 0.5})`);
+  vg.addColorStop(1, `rgba(255,110,20,${grade.warm * 0.25})`);
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, W, H);
 }
